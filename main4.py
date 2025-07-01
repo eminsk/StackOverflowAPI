@@ -131,11 +131,6 @@ class StackOverflowGUI(QMainWindow):
         self.selected_language = None
         self.question_cache = {'English': {}, 'Russian': {}}
         
-        # Store search results and query to prevent losing them
-        self.current_search_query = ""
-        self.search_results = {'English': "", 'Russian': ""}
-        self.last_search_language = "Both"
-        
         self.initUI()
         
     def initUI(self):
@@ -162,17 +157,11 @@ class StackOverflowGUI(QMainWindow):
         search_button = QPushButton("Search")
         search_button.clicked.connect(self.perform_search)
         
-        # Add back to results button
-        self.back_button = QPushButton("← Back to Results")
-        self.back_button.clicked.connect(self.show_search_results)
-        self.back_button.setVisible(False)  # Initially hidden
-        
         search_layout.addWidget(QLabel("Search:"))
         search_layout.addWidget(self.search_input, 1)
         search_layout.addWidget(QLabel("Language:"))
         search_layout.addWidget(self.language_selector)
         search_layout.addWidget(search_button)
-        search_layout.addWidget(self.back_button)
         
         # Content section (split view)
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -356,19 +345,11 @@ class StackOverflowGUI(QMainWindow):
             
         selected_language = self.language_selector.currentText()
         
-        # Store the current search parameters
-        self.current_search_query = query
-        self.last_search_language = selected_language
-        
         # Clear previous results
         self.english_questions_browser.clear()
         self.russian_questions_browser.clear()
         self.question_details_browser.clear()
         self.answers_browser.clear()
-        self.search_results = {'English': "", 'Russian': ""}
-        
-        # Hide back button during search
-        self.back_button.setVisible(False)
         
         self.statusBar().showMessage(f"Searching for: {query}...")
         
@@ -396,21 +377,17 @@ class StackOverflowGUI(QMainWindow):
     def handle_search_results(self, results, language):
         """Process and display search results"""
         if "error" in results:
-            error_html = f"<p>Error: {results['error']}</p>"
-            self.search_results[language] = error_html
             if language == "English":
-                self.english_questions_browser.setHtml(error_html)
+                self.english_questions_browser.setText(f"Error: {results['error']}")
             else:
-                self.russian_questions_browser.setHtml(error_html)
+                self.russian_questions_browser.setText(f"Error: {results['error']}")
             return
             
         questions = results.get("items", [])
         
         if not questions:
-            no_results_html = "<p>No results found.</p>"
-            self.search_results[language] = no_results_html
             browser = self.english_questions_browser if language == "English" else self.russian_questions_browser
-            browser.setHtml(no_results_html)
+            browser.setText("No results found.")
             return
             
         # Format results for display
@@ -438,40 +415,16 @@ class StackOverflowGUI(QMainWindow):
             )
             
         html_results.append("</body></html>")
-        results_html = ''.join(html_results)
-        
-        # Store the formatted results
-        self.search_results[language] = results_html
         
         # Update the appropriate browser
         browser = self.english_questions_browser if language == "English" else self.russian_questions_browser
-        browser.setHtml(results_html)
+        browser.setHtml(''.join(html_results))
         
         self.statusBar().showMessage(f"Found {len(questions)} results in {language}")
         
         # Switch to the appropriate tab
         tab_index = 0 if language == "English" else 1
         self.questions_tabs.setCurrentIndex(tab_index)
-    
-    def show_search_results(self):
-        """Restore the search results view"""
-        if self.search_results['English']:
-            self.english_questions_browser.setHtml(self.search_results['English'])
-        if self.search_results['Russian']:
-            self.russian_questions_browser.setHtml(self.search_results['Russian'])
-        
-        # Clear question details and answers
-        self.question_details_browser.clear()
-        self.answers_browser.clear()
-        
-        # Hide back button
-        self.back_button.setVisible(False)
-        
-        # Reset selection
-        self.selected_question_id = None
-        self.selected_language = None
-        
-        self.statusBar().showMessage(f"Showing results for: {self.current_search_query}")
     
     def load_question(self, question_id_str, language):
         """Load detailed information for a selected question"""
@@ -483,9 +436,6 @@ class StackOverflowGUI(QMainWindow):
             
         self.selected_question_id = question_id
         self.selected_language = language
-        
-        # Show back button
-        self.back_button.setVisible(True)
         
         # Get question details from cache
         question = self.question_cache[language].get(question_id)
@@ -524,7 +474,8 @@ class StackOverflowGUI(QMainWindow):
         
         self.question_details_browser.setHtml(question_html)
         
-        # Clear previous answers and show loading message
+        # Clear previous answers display
+        self.answers_browser.clear()
         self.answers_browser.setHtml("<p>Loading answers...</p>")
         
         # Fetch answers in a separate thread
