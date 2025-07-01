@@ -233,106 +233,33 @@ class StackOverflowGUI(QMainWindow):
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f5f5f5;
-                color: #333333;
-            }
-            QWidget {
-                background-color: #ffffff;
-                color: #333333;
             }
             QFrame {
                 border-radius: 5px;
-                background-color: #ffffff;
-                border: 1px solid #e0e0e0;
+                background-color: white;
             }
             QLineEdit {
                 padding: 8px;
                 border: 1px solid #ddd;
                 border-radius: 4px;
-                background-color: #ffffff;
-                color: #333333;
-            }
-            QLineEdit:focus {
-                border: 2px solid #0077cc;
             }
             QPushButton {
                 background-color: #0077cc;
-                color: #ffffff;
+                color: white;
                 padding: 8px 16px;
                 border: none;
                 border-radius: 4px;
-                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #0095ff;
             }
-            QPushButton:pressed {
-                background-color: #005fa3;
-            }
             QTextBrowser {
                 border: 1px solid #ddd;
                 border-radius: 4px;
-                background-color: #ffffff;
-                color: #333333;
-                selection-background-color: #b3d9ff;
             }
             QTabWidget::pane {
                 border: 1px solid #ddd;
                 border-radius: 4px;
-                background-color: #ffffff;
-            }
-            QTabWidget::tab-bar {
-                alignment: center;
-            }
-            QTabBar::tab {
-                background-color: #f0f0f0;
-                color: #333333;
-                padding: 8px 16px;
-                margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-            }
-            QTabBar::tab:selected {
-                background-color: #ffffff;
-                border-bottom: 2px solid #0077cc;
-            }
-            QTabBar::tab:hover {
-                background-color: #e8e8e8;
-            }
-            QComboBox {
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background-color: #ffffff;
-                color: #333333;
-                min-width: 100px;
-            }
-            QComboBox::drop-down {
-                border: none;
-                background-color: transparent;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-style: solid;
-                border-width: 5px;
-                border-color: #666666 transparent transparent transparent;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #ffffff;
-                color: #333333;
-                border: 1px solid #ddd;
-                selection-background-color: #b3d9ff;
-            }
-            QLabel {
-                color: #333333;
-            }
-            QSplitter::handle {
-                background-color: #ddd;
-            }
-            QSplitter::handle:horizontal {
-                width: 3px;
-            }
-            QSplitter::handle:vertical {
-                height: 3px;
             }
         """)
         
