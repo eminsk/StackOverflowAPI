@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Nuitka build artifacts
+*.build
+*.dist
+*.onefile-build
+*.exe
+*.spec
