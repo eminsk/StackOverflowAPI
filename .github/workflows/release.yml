@@ -1,0 +1,43 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install dependencies
+      run: |
+        pip install nuitka zstandard pillow requests beautifulsoup4 pygments pyqt6
+    
+    - name: Build with Nuitka
+      uses: Nuitka/Nuitka-Action@main
+      with:
+        nuitka-version: main
+        script-name: main.py
+        onefile: true
+        standalone: true
+        windows-console-mode: disable
+        windows-icon-from-ico: icon.png
+        enable-plugins: pyqt6
+        include-package: requests,bs4,pygments
+        output-filename: StackOverflowGUI.exe
+        
+    - name: Upload Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: build/StackOverflowGUI.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
