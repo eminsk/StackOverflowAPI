@@ -1,27 +1,31 @@
-# Stack Overflow Search Pro 🚀
+# Stack Overflow Search Pro 🚀 (v2.0)
 
-A professional, high-performance desktop application for searching Stack Overflow and Russian Stack Overflow simultaneously. Built with Python and PyQt6, compiled to a standalone executable for ease of use.
+A modern, high-performance, and lightweight desktop application for searching **Stack Overflow (English)** and **Russian Stack Overflow** simultaneously. Built with Python and **CustomTkinter**, with an elegant dark/light UI, rich syntax highlighting, and 1-click code block copying.
 
 ![Icon](icon.png)
 
 ## ✨ Features
 
-- **Bilingual Search**: Search usage on **Stack Overflow (English)** and **Stack Overflow (Russian)** at the same time.
-- **High Performance**: Asynchronous multi-threaded searching ensures the UI never freezes.
-- **Embedded Content**: View Questions, Answers, and Comments directly within the application.
-- **Rich Syntax Highlighting**: Code blocks are automatically detected and highlighted (Python, C++, Java, etc.).
-- **Smart Copy**: One-click copy for code blocks.
-- **No Browser Needed**: Everything happens inside the clean, modern GUI.
-- **Standalone**: Single `.exe` file, no Python installation required.
+- **⚡ Lightweight & Fast**: Built with CustomTkinter instead of heavy UI frameworks—minimal memory footprint and instant startup.
+- **🌐 Bilingual Search**: Simultaneous or dedicated search across **Stack Overflow (English)** and **Stack Overflow (Russian)**.
+- **🎨 Modern Professional UI**:
+  - Polished Dark / Light / System themes with Stack Overflow brand accents.
+  - Split master-detail view with clean question cards, answer counters, score pills, view counts, and tag chips.
+  - Green glowing banners for accepted solutions.
+- **💡 Rich Content & Code Highlighting**:
+  - Full Question & Answer formatting (paragraphs, blockquotes, lists, headings).
+  - Code blocks with Pygments syntax highlighting (Python, JavaScript, C++, Rust, Go, SQL, Bash, HTML, CSS, etc.).
+  - **1-Click Smart Copy**: Instant clipboard copy with visual feedback animation.
+- **💬 Full Comments Support**: Collapsible/expandable comment threads for both questions and individual answers.
+- **🚀 Advanced Sorting**: Sort results by *Relevance*, *Votes*, *Newest (Creation)*, or *Recent Activity*.
+- **🧵 Non-Blocking Concurrency**: Thread-safe asynchronous background fetching keeps the UI silky smooth at all times.
+- **📦 Standalone Executable**: Can be compiled into a single compact `.exe` file without heavy Qt dependencies.
 
-## 🛠 Installation
+---
 
-### User (Windows)
-1. Download the latest `StackOverflowGUI.exe` from the [Releases](https://github.com/eminsk/StackOverflowAPI/releases) page.
-2. Double-click to run. No installation required.
+## 🛠 Installation & Running
 
-### Developer (Source)
-To run from source:
+### Developer (from source with `uv`)
 ```bash
 # Clone repository
 git clone https://github.com/eminsk/StackOverflowAPI.git
@@ -30,24 +34,36 @@ cd StackOverflowAPI
 # Install dependencies (using uv)
 uv sync
 
-# Run
+# Run the app
 uv run main.py
 ```
 
-## 🏗 Compilation
+### Running Tests
+```bash
+uv run python tests/test_components.py
+```
 
-To build the executable yourself (requires Nuitka):
+---
+
+## 🏗 Standalone Compilation (Nuitka)
+
+To compile the application into a single standalone Windows `.exe` file:
 
 ```bash
 uv run build_exe.py
 ```
 
-This will generate `StackOverflowGUI.exe` in the project root.
+This generates an ultra-compact `StackOverflowGUI.exe` in the root folder without any heavy Qt runtime dependencies.
+
+---
 
 ## 📋 Requirements
 
-- Windows 10/11
-- Internet connection (for API access)
+- Windows 10 / 11
+- Python 3.12+
+- Active Internet connection (for Stack Exchange API)
+
+---
 
 ## 📄 License
 

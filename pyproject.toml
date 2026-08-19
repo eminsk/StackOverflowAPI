@@ -1,15 +1,16 @@
 [project]
 name = "stackoverflowapi"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.2.0"
+description = "Modern and lightweight Stack Overflow Desktop Search tool"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.3",
+    "customtkinter>=6.0.0",
+    "darkdetect>=0.8.0",
     "nuitka>=2.8.9",
     "pillow>=12.1.0",
     "pygments>=2.19.2",
-    "pyqt6>=6.9.0",
     "requests>=2.32.3",
     "zstandard>=0.25.0",
 ]
