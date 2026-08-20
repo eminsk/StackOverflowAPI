@@ -1,5 +1,5 @@
 """
-Code Block Widget with Syntax Highlighting and 1-Click Clipboard Copy
+Code Block Widget with Syntax Highlighting, Horizontal Scrollbar, and 1-Click Clipboard Copy
 """
 
 import sys
@@ -15,8 +15,12 @@ from src.ui.theme import (
 
 class CodeBlockWidget(ctk.CTkFrame):
     """
-    Component displaying a code block with language header, 
-    syntax-highlighted text, and a copy button with visual feedback.
+    Component displaying a code block with:
+    - Language badge and 1-click clipboard copy button
+    - Syntax-highlighted text using Pygments
+    - Modern horizontal CTkScrollbar for wide lines
+    - Shift + MouseWheel horizontal scrolling
+    - MouseWheel forwarding for smooth page scrolling
     """
 
     def __init__(self, master, code: str, language_hint: str = None, **kwargs):
@@ -75,13 +79,13 @@ class CodeBlockWidget(ctk.CTkFrame):
         self.copy_btn.pack(side="right", padx=6, pady=4)
 
         # Code Text Area
-        line_count = min(max(code.count('\n') + 1, 2), 35)
-        text_height = min(max(line_count, 2), 30)
+        line_count = max(code.count('\n') + 1, 2)
+        text_height = min(line_count, 60)
 
         theme_palette = THEME_COLORS.get(self.mode, THEME_COLORS["dark"])
 
         self.text_frame = tk.Frame(self, bg=theme_palette["bg"])
-        self.text_frame.pack(fill="x", expand=True, padx=8, pady=(4, 8))
+        self.text_frame.pack(fill="x", expand=True, padx=8, pady=(4, 2))
 
         # Tkinter Text widget
         self.text_widget = tk.Text(
@@ -97,30 +101,29 @@ class CodeBlockWidget(ctk.CTkFrame):
             padx=8,
             pady=6,
             highlightthickness=0,
-            relief="flat"
+            relief="flat",
+            cursor="xterm"
         )
-        
-        # Horizontal scrollbar if code is wide
-        self.h_scroll = tk.Scrollbar(
-            self.text_frame,
-            orient="horizontal",
+
+        # Modern horizontal scrollbar (CTkScrollbar)
+        self.h_scroll = ctk.CTkScrollbar(
+            self,
+            orientation="horizontal",
             command=self.text_widget.xview,
-            bg=theme_palette["bg"]
+            height=12
         )
         self.text_widget.configure(xscrollcommand=self.h_scroll.set)
 
         self.text_widget.pack(fill="both", expand=True)
-
-        # Only pack h_scroll if long lines exist
-        max_line_len = max([len(line) for line in code.split('\n')] or [0])
-        if max_line_len > 60:
-            self.h_scroll.pack(fill="x")
+        self.h_scroll.pack(fill="x", padx=8, pady=(0, 6))
 
         # Insert and highlight code
         self.render_highlighted_code()
 
         # Bind mousewheel to scroll parent page with native speed
         self.text_widget.bind("<MouseWheel>", self._on_mousewheel)
+        self.text_widget.bind("<Shift-MouseWheel>", self._on_shift_mousewheel)
+        self.text_widget.bind("<Button-3>", self._show_context_menu)
 
         # Make read-only
         self.text_widget.configure(state="disabled")
@@ -152,6 +155,47 @@ class CodeBlockWidget(ctk.CTkFrame):
                 except Exception:
                     pass
             curr = getattr(curr, "master", None)
+
+    def _on_shift_mousewheel(self, event):
+        """Scroll code horizontally when holding Shift + Mouse Wheel."""
+        try:
+            if sys.platform.startswith("win"):
+                delta = -int(event.delta / 6)
+            elif sys.platform == "darwin":
+                delta = -event.delta
+            else:
+                delta = -1 if event.num == 4 else 1
+            self.text_widget.xview("scroll", delta, "units")
+            return "break"
+        except Exception:
+            pass
+
+    def _show_context_menu(self, event):
+        """Show context menu for copying code."""
+        menu = tk.Menu(self.text_widget, tearoff=0)
+        has_sel = bool(self.text_widget.tag_ranges("sel"))
+        if has_sel:
+            menu.add_command(label="Копировать (Copy)", command=self._copy_selection)
+        else:
+            menu.add_command(label="Копировать весь код (Copy All)", command=self.copy_to_clipboard)
+
+        menu.add_command(label="Выделить всё (Select All)", command=self._select_all)
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def _copy_selection(self):
+        try:
+            sel = self.text_widget.get("sel.first", "sel.last")
+            if sel:
+                self.clipboard_clear()
+                self.clipboard_append(sel)
+        except Exception:
+            pass
+
+    def _select_all(self):
+        self.text_widget.tag_add("sel", "1.0", "end-1c")
 
     def render_highlighted_code(self):
         """Insert tokens and configure tag colors in Tk Text widget."""
@@ -186,7 +230,6 @@ class CodeBlockWidget(ctk.CTkFrame):
             selectbackground=theme_palette["select_bg"],
             selectforeground=theme_palette["fg"]
         )
-        self.h_scroll.configure(bg=theme_palette["bg"])
         self.render_highlighted_code()
 
     def copy_to_clipboard(self):
