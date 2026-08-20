@@ -65,12 +65,20 @@ class TestStackOverflow(unittest.TestCase):
         rich.pack(fill="x")
         root.update()
 
-        # Verify unified text widget exists and has content
-        self.assertIsNotNone(rich.text_widget)
-        rich._select_all()
-        selected = rich.text_widget.get("sel.first", "sel.last")
+        # Verify text blocks and code widgets exist and are visible
+        self.assertEqual(len(rich.text_blocks), 2)
+        self.assertEqual(len(rich.code_widgets), 1)
+
+        # Verify code widget is mapped and has positive width/height
+        cw = rich.code_widgets[0]
+        self.assertGreater(cw.winfo_width(), 0)
+        self.assertGreater(cw.winfo_height(), 0)
+
+        # Verify text selection in text block
+        tb = rich.text_blocks[0]
+        tb._select_all()
+        selected = tb.get("sel.first", "sel.last")
         self.assertIn("First paragraph", selected)
-        self.assertIn("Item 1", selected)
 
         rich.apply_theme("light")
         rich.apply_theme("dark")
