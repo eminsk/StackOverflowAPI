@@ -280,3 +280,48 @@ def parse_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
                     blocks.append({"type": "paragraph", "text": p_text})
 
     return blocks
+
+
+def html_to_markdown(html_content: str) -> str:
+    """
+    Convert Stack Overflow HTML content into clean, readable Markdown text
+    suitable for 1-click copying to clipboard.
+    """
+    blocks = parse_html_to_blocks(html_content)
+    if not blocks:
+        # Fallback to simple unescaped text
+        soup = BeautifulSoup(html_content or "", 'html.parser')
+        return soup.get_text().strip()
+
+    md_parts = []
+    for b in blocks:
+        b_type = b.get("type")
+        if b_type == "heading":
+            level = b.get("level", 2)
+            md_parts.append(f"{'#' * level} {b.get('text', '')}\n")
+        elif b_type == "paragraph":
+            text = b.get("text", "")
+            if text:
+                md_parts.append(f"{text}\n")
+        elif b_type == "code":
+            code = b.get("code", "")
+            lang = b.get("language") or ""
+            if lang.startswith("lang-") or lang.startswith("language-"):
+                lang = re.sub(r'^(lang-|language-)', '', lang)
+            md_parts.append(f"```{lang}\n{code}\n```\n")
+        elif b_type == "blockquote":
+            text = b.get("text", "")
+            quoted = "\n".join(f"> {line}" for line in text.splitlines())
+            md_parts.append(f"{quoted}\n")
+        elif b_type == "list":
+            items = b.get("items", [])
+            ordered = b.get("ordered", False)
+            for idx, item in enumerate(items, 1):
+                prefix = f"{idx}." if ordered else "-"
+                md_parts.append(f"{prefix} {item}")
+            md_parts.append("")
+        elif b_type == "hr":
+            md_parts.append("---\n")
+
+    return "\n".join(md_parts).strip()
+

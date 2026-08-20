@@ -2,6 +2,7 @@
 Code Block Widget with Syntax Highlighting and 1-Click Clipboard Copy
 """
 
+import sys
 import tkinter as tk
 import customtkinter as ctk
 from src.utils.highlighter import CodeHighlighter, THEME_COLORS
@@ -118,8 +119,39 @@ class CodeBlockWidget(ctk.CTkFrame):
         # Insert and highlight code
         self.render_highlighted_code()
 
+        # Bind mousewheel to scroll parent page with native speed
+        self.text_widget.bind("<MouseWheel>", self._on_mousewheel)
+
         # Make read-only
         self.text_widget.configure(state="disabled")
+
+    def _on_mousewheel(self, event):
+        """Propagate mouse wheel events upward to parent CTkScrollableFrame with native speed."""
+        curr = self.master
+        while curr is not None:
+            if hasattr(curr, "_parent_canvas") and curr._parent_canvas:
+                try:
+                    if sys.platform.startswith("win"):
+                        delta = -int(event.delta / 6)
+                    elif sys.platform == "darwin":
+                        delta = -event.delta
+                    else:
+                        delta = -1 if event.num == 4 else 1
+                    curr._parent_canvas.yview("scroll", delta, "units")
+                    return "break"
+                except Exception:
+                    pass
+            elif isinstance(curr, tk.Canvas):
+                try:
+                    if sys.platform.startswith("win"):
+                        delta = -int(event.delta / 6)
+                    else:
+                        delta = -1 if event.num == 4 else 1
+                    curr.yview("scroll", delta, "units")
+                    return "break"
+                except Exception:
+                    pass
+            curr = getattr(curr, "master", None)
 
     def render_highlighted_code(self):
         """Insert tokens and configure tag colors in Tk Text widget."""
