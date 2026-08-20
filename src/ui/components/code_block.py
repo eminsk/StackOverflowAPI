@@ -1,5 +1,5 @@
 """
-Code Block Widget with Syntax Highlighting, Horizontal Scrollbar, and 1-Click Clipboard Copy
+Code Block Widget with Syntax Highlighting, Vertical & Horizontal Scrollbars, and 1-Click Clipboard Copy
 """
 
 import sys
@@ -18,10 +18,13 @@ class CodeBlockWidget(ctk.CTkFrame):
     Component displaying a code block with:
     - Language badge and 1-click clipboard copy button
     - Syntax-highlighted text using Pygments
+    - Modern vertical CTkScrollbar for multi-line code
     - Modern horizontal CTkScrollbar for wide lines
+    - Smart MouseWheel scrolling (scrolls code block vertically, forwards to page at boundaries)
     - Shift + MouseWheel horizontal scrolling
-    - MouseWheel forwarding for smooth page scrolling
     """
+
+    MAX_VISIBLE_LINES = 20
 
     def __init__(self, master, code: str, language_hint: str = None, **kwargs):
         super().__init__(
@@ -78,14 +81,21 @@ class CodeBlockWidget(ctk.CTkFrame):
         )
         self.copy_btn.pack(side="right", padx=6, pady=4)
 
-        # Code Text Area
-        line_count = max(code.count('\n') + 1, 2)
-        text_height = min(line_count, 60)
+        # Code Text Area Frame
+        total_lines = max(code.count('\n') + 1, 2)
+        text_height = min(total_lines, self.MAX_VISIBLE_LINES)
 
         theme_palette = THEME_COLORS.get(self.mode, THEME_COLORS["dark"])
 
         self.text_frame = tk.Frame(self, bg=theme_palette["bg"])
         self.text_frame.pack(fill="x", expand=True, padx=8, pady=(4, 2))
+
+        # Vertical scrollbar (CTkScrollbar)
+        self.v_scroll = ctk.CTkScrollbar(
+            self.text_frame,
+            orientation="vertical",
+            width=12
+        )
 
         # Tkinter Text widget
         self.text_widget = tk.Text(
@@ -105,22 +115,32 @@ class CodeBlockWidget(ctk.CTkFrame):
             cursor="xterm"
         )
 
-        # Modern horizontal scrollbar (CTkScrollbar)
+        # Horizontal scrollbar (CTkScrollbar)
         self.h_scroll = ctk.CTkScrollbar(
             self,
             orientation="horizontal",
             command=self.text_widget.xview,
             height=12
         )
-        self.text_widget.configure(xscrollcommand=self.h_scroll.set)
 
-        self.text_widget.pack(fill="both", expand=True)
+        self.v_scroll.configure(command=self.text_widget.yview)
+        self.text_widget.configure(
+            xscrollcommand=self.h_scroll.set,
+            yscrollcommand=self.v_scroll.set
+        )
+
+        # Pack vertical scrollbar and text widget
+        if total_lines > self.MAX_VISIBLE_LINES:
+            self.v_scroll.pack(side="right", fill="y", padx=(2, 0))
+        self.text_widget.pack(side="left", fill="both", expand=True)
+
+        # Always pack horizontal scrollbar
         self.h_scroll.pack(fill="x", padx=8, pady=(0, 6))
 
         # Insert and highlight code
         self.render_highlighted_code()
 
-        # Bind mousewheel to scroll parent page with native speed
+        # Bind smart mousewheel (vertical scrolling within code, forwarding at bounds)
         self.text_widget.bind("<MouseWheel>", self._on_mousewheel)
         self.text_widget.bind("<Shift-MouseWheel>", self._on_shift_mousewheel)
         self.text_widget.bind("<Button-3>", self._show_context_menu)
@@ -129,28 +149,47 @@ class CodeBlockWidget(ctk.CTkFrame):
         self.text_widget.configure(state="disabled")
 
     def _on_mousewheel(self, event):
-        """Propagate mouse wheel events upward to parent CTkScrollableFrame with native speed."""
+        """
+        Smart vertical scrolling:
+        - If code block has internal vertical overflow and not at top/bottom boundary,
+          scrolls the code block internally.
+        - Otherwise, forwards scrolling to the parent CTkScrollableFrame.
+        """
+        yv = self.text_widget.yview()
+        is_scrollable = yv != (0.0, 1.0)
+        delta = event.delta
+
+        if is_scrollable:
+            # Negative delta = scroll down, Positive delta = scroll up on Windows
+            if delta < 0 and yv[1] < 1.0:
+                self.text_widget.yview("scroll", -int(delta / 40), "units")
+                return "break"
+            elif delta > 0 and yv[0] > 0.0:
+                self.text_widget.yview("scroll", -int(delta / 40), "units")
+                return "break"
+
+        # Forward to parent page
         curr = self.master
         while curr is not None:
             if hasattr(curr, "_parent_canvas") and curr._parent_canvas:
                 try:
                     if sys.platform.startswith("win"):
-                        delta = -int(event.delta / 6)
+                        scroll_delta = -int(delta / 6)
                     elif sys.platform == "darwin":
-                        delta = -event.delta
+                        scroll_delta = -delta
                     else:
-                        delta = -1 if event.num == 4 else 1
-                    curr._parent_canvas.yview("scroll", delta, "units")
+                        scroll_delta = -1 if event.num == 4 else 1
+                    curr._parent_canvas.yview("scroll", scroll_delta, "units")
                     return "break"
                 except Exception:
                     pass
             elif isinstance(curr, tk.Canvas):
                 try:
                     if sys.platform.startswith("win"):
-                        delta = -int(event.delta / 6)
+                        scroll_delta = -int(delta / 6)
                     else:
-                        delta = -1 if event.num == 4 else 1
-                    curr.yview("scroll", delta, "units")
+                        scroll_delta = -1 if event.num == 4 else 1
+                    curr.yview("scroll", scroll_delta, "units")
                     return "break"
                 except Exception:
                     pass
