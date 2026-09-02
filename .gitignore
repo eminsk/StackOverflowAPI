@@ -5,6 +5,9 @@ build/
 dist/
 wheels/
 *.egg-info
+crash_log.txt
+bookmarks.json
+*.tmp
 
 # Virtual environments
 .venv
@@ -15,3 +18,4 @@ wheels/
 *.onefile-build
 *.exe
 *.spec
+nuitka-crash-report.xml

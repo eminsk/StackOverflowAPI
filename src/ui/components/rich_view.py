@@ -1,25 +1,28 @@
 """
 Rich Content View Component
 Renders structured HTML content (paragraphs, headings, lists, blockquotes, code blocks)
-with visible, syntax-highlighted code blocks, 1-click code copying, and continuous
-multi-line text selection for all text sections.
+with inline code chips, bold/italic typography, clickable links, Pygments syntax-highlighted
+code blocks, 1-click code copying, and continuous multi-line text selection.
 """
 
 import sys
 import tkinter as tk
+import webbrowser
 from typing import Dict, Any, List, Union, Tuple, Optional
 import customtkinter as ctk
 from src.utils.highlighter import parse_html_to_blocks
 from src.ui.components.code_block import CodeBlockWidget
 from src.ui.theme import (
-    SO_ORANGE, COLOR_PRIMARY,
+    SO_ORANGE, COLOR_PRIMARY, COLOR_TEXT_LINK,
     COLOR_BG_CARD, COLOR_BG_BLOCKQUOTE, COLOR_BORDER,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED
+    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
+    COLOR_INLINE_CODE_BG, COLOR_INLINE_CODE_FG,
+    FONT_FAMILY, FONT_FAMILY_MONO, resolve_color
 )
 
 # Selection background colors for light and dark modes
 THEME_SELECTION_BG = {
-    "dark": "#45475a",
+    "dark": "#3e4259",
     "light": "#cbd5e1"
 }
 
@@ -27,7 +30,7 @@ THEME_SELECTION_BG = {
 class SelectableTextBlock(tk.Text):
     """
     A read-only Tkinter Text widget representing a continuous block of rich text
-    (paragraphs, headings, lists, blockquotes) with multi-line selection.
+    with inline code badges, bold/italic, clickable hyperlinks, and multi-line selection.
     """
 
     def __init__(
@@ -39,18 +42,19 @@ class SelectableTextBlock(tk.Text):
     ):
         self.blocks = blocks
         self.card_bg_color = bg_color
+        self._link_counter = 0
 
         mode = ctk.get_appearance_mode().lower()
         self.mode = "light" if mode == "light" else "dark"
 
-        bg = self._resolve_color(self.card_bg_color, self.mode)
-        fg = self._resolve_color(COLOR_TEXT_PRIMARY, self.mode)
+        bg = resolve_color(self.card_bg_color, self.mode)
+        fg = resolve_color(COLOR_TEXT_PRIMARY, self.mode)
         select_bg = THEME_SELECTION_BG.get(self.mode, THEME_SELECTION_BG["dark"])
 
         super().__init__(
             master,
             wrap="word",
-            font=("Segoe UI", 12),
+            font=(FONT_FAMILY, 12),
             bg=bg,
             fg=fg,
             selectbackground=select_bg,
@@ -61,8 +65,8 @@ class SelectableTextBlock(tk.Text):
             highlightthickness=0,
             relief="flat",
             cursor="xterm",
-            spacing1=1,
-            spacing3=1,
+            spacing1=2,
+            spacing3=2,
             **kwargs
         )
 
@@ -82,25 +86,23 @@ class SelectableTextBlock(tk.Text):
         mode = ctk.get_appearance_mode().lower()
         return "light" if mode == "light" else "dark"
 
-    def _resolve_color(self, color_spec: Union[str, Tuple[str, str], list], mode: str) -> str:
-        if isinstance(color_spec, (tuple, list)):
-            return color_spec[0] if mode == "light" else color_spec[1]
-        return color_spec
-
     def _setup_tags(self):
         """Configure typography and colors for different HTML elements."""
-        fg_primary = self._resolve_color(COLOR_TEXT_PRIMARY, self.mode)
-        fg_secondary = self._resolve_color(COLOR_TEXT_SECONDARY, self.mode)
-        fg_muted = self._resolve_color(COLOR_TEXT_MUTED, self.mode)
-        bg_quote = self._resolve_color(COLOR_BG_BLOCKQUOTE, self.mode)
+        fg_primary = resolve_color(COLOR_TEXT_PRIMARY, self.mode)
+        fg_secondary = resolve_color(COLOR_TEXT_SECONDARY, self.mode)
+        fg_muted = resolve_color(COLOR_TEXT_MUTED, self.mode)
+        bg_quote = resolve_color(COLOR_BG_BLOCKQUOTE, self.mode)
+        bg_inline_code = resolve_color(COLOR_INLINE_CODE_BG, self.mode)
+        fg_inline_code = resolve_color(COLOR_INLINE_CODE_FG, self.mode)
+        fg_link = resolve_color(COLOR_TEXT_LINK, self.mode)
 
-        self.tag_configure("p", font=("Segoe UI", 12), foreground=fg_primary, spacing1=3, spacing3=6)
-        self.tag_configure("h1", font=("Segoe UI", 16, "bold"), foreground=fg_primary, spacing1=10, spacing3=4)
-        self.tag_configure("h2", font=("Segoe UI", 14, "bold"), foreground=fg_primary, spacing1=8, spacing3=4)
-        self.tag_configure("h3", font=("Segoe UI", 13, "bold"), foreground=fg_primary, spacing1=6, spacing3=3)
+        self.tag_configure("p", font=(FONT_FAMILY, 12), foreground=fg_primary, spacing1=3, spacing3=6)
+        self.tag_configure("h1", font=(FONT_FAMILY, 16, "bold"), foreground=fg_primary, spacing1=10, spacing3=4)
+        self.tag_configure("h2", font=(FONT_FAMILY, 14, "bold"), foreground=fg_primary, spacing1=8, spacing3=4)
+        self.tag_configure("h3", font=(FONT_FAMILY, 13, "bold"), foreground=fg_primary, spacing1=6, spacing3=3)
         self.tag_configure(
             "blockquote",
-            font=("Segoe UI", 11, "italic"),
+            font=(FONT_FAMILY, 11, "italic"),
             foreground=fg_secondary,
             lmargin1=16,
             lmargin2=16,
@@ -110,47 +112,112 @@ class SelectableTextBlock(tk.Text):
         )
         self.tag_configure(
             "list_item",
-            font=("Segoe UI", 12),
+            font=(FONT_FAMILY, 12),
             foreground=fg_primary,
             lmargin1=8,
             lmargin2=24,
             spacing1=2,
             spacing3=2
         )
-        self.tag_configure("list_bullet", font=("Segoe UI", 12, "bold"), foreground=SO_ORANGE)
-        self.tag_configure("muted", font=("Segoe UI", 11), foreground=fg_muted)
+        self.tag_configure("list_bullet", font=(FONT_FAMILY, 12, "bold"), foreground=SO_ORANGE)
+        self.tag_configure("muted", font=(FONT_FAMILY, 11), foreground=fg_muted)
+
+        # Inline formatting tags
+        self.tag_configure(
+            "code_inline",
+            font=(FONT_FAMILY_MONO, 10, "bold"),
+            background=bg_inline_code,
+            foreground=fg_inline_code
+        )
+        self.tag_configure("bold", font=(FONT_FAMILY, 12, "bold"), foreground=fg_primary)
+        self.tag_configure("italic", font=(FONT_FAMILY, 12, "italic"), foreground=fg_secondary)
+        self.tag_configure("kbd", font=(FONT_FAMILY_MONO, 9, "bold"), background=bg_inline_code, foreground=fg_primary)
+        self.tag_configure("link_default", font=(FONT_FAMILY, 12, "underline"), foreground=fg_link)
+
+    def _insert_segments(self, segments: List[Tuple[str, str, Optional[str]]], base_tag: str):
+        """Insert structured inline segments with appropriate tags and link hooks."""
+        fg_link = resolve_color(COLOR_TEXT_LINK, self.mode)
+        for seg_text, tag_type, opt_url in segments:
+            if not seg_text:
+                continue
+
+            if tag_type == "code_inline":
+                # Space padding around inline code
+                self.insert("end", f" {seg_text} ", ("code_inline", base_tag))
+            elif tag_type == "bold":
+                self.insert("end", seg_text, ("bold", base_tag))
+            elif tag_type == "italic":
+                self.insert("end", seg_text, ("italic", base_tag))
+            elif tag_type == "kbd":
+                self.insert("end", f" {seg_text} ", ("kbd", base_tag))
+            elif tag_type == "link" and opt_url:
+                self._link_counter += 1
+                link_tag = f"link_{self._link_counter}"
+                self.tag_configure(link_tag, font=(FONT_FAMILY, 12, "underline"), foreground=fg_link)
+                self.tag_bind(link_tag, "<Button-1>", lambda e, u=opt_url: webbrowser.open(u))
+                self.tag_bind(link_tag, "<Enter>", lambda e: self.configure(cursor="hand2"))
+                self.tag_bind(link_tag, "<Leave>", lambda e: self.configure(cursor="xterm"))
+                self.insert("end", seg_text, (link_tag, base_tag))
+            else:
+                self.insert("end", seg_text, base_tag)
 
     def _populate_content(self):
-        """Insert block contents into the text widget."""
+        """Insert block contents into the text widget with inline styling."""
         self.configure(state="normal")
         self.delete("1.0", "end")
+        self._link_counter = 0
 
         for b in self.blocks:
             b_type = b.get("type")
+            segments = b.get("segments")
+
             if b_type == "paragraph":
-                p_text = b.get("text", "")
-                if p_text:
-                    self.insert("end", p_text + "\n\n", "p")
+                if segments:
+                    self._insert_segments(segments, "p")
+                    self.insert("end", "\n\n")
+                else:
+                    p_text = b.get("text", "")
+                    if p_text:
+                        self.insert("end", p_text + "\n\n", "p")
+
             elif b_type == "heading":
                 level = b.get("level", 2)
-                h_text = b.get("text", "")
                 tag = f"h{min(max(level, 1), 3)}"
-                if h_text:
-                    self.insert("end", h_text + "\n\n", tag)
+                if segments:
+                    self._insert_segments(segments, tag)
+                    self.insert("end", "\n\n")
+                else:
+                    h_text = b.get("text", "")
+                    if h_text:
+                        self.insert("end", h_text + "\n\n", tag)
+
             elif b_type == "blockquote":
-                q_text = b.get("text", "")
-                if q_text:
-                    self.insert("end", q_text + "\n\n", "blockquote")
+                if segments:
+                    self._insert_segments(segments, "blockquote")
+                    self.insert("end", "\n\n")
+                else:
+                    q_text = b.get("text", "")
+                    if q_text:
+                        self.insert("end", q_text + "\n\n", "blockquote")
+
             elif b_type == "list":
                 items = b.get("items", [])
+                item_segments = b.get("item_segments", [])
                 ordered = b.get("ordered", False)
+
                 for idx, item in enumerate(items, 1):
                     prefix = f"{idx}. " if ordered else "• "
                     self.insert("end", prefix, "list_bullet")
-                    self.insert("end", item + "\n", "list_item")
+
+                    if idx - 1 < len(item_segments) and item_segments[idx - 1]:
+                        self._insert_segments(item_segments[idx - 1], "list_item")
+                        self.insert("end", "\n")
+                    else:
+                        self.insert("end", item + "\n", "list_item")
                 self.insert("end", "\n")
+
             elif b_type == "hr":
-                self.insert("end", "—" * 35 + "\n\n", "muted")
+                self.insert("end", "—" * 38 + "\n\n", "muted")
 
         self.configure(state="disabled")
         self._adjust_height()
@@ -248,8 +315,8 @@ class SelectableTextBlock(tk.Text):
         else:
             self.mode = self._get_current_mode()
 
-        bg = self._resolve_color(self.card_bg_color, self.mode)
-        fg = self._resolve_color(COLOR_TEXT_PRIMARY, self.mode)
+        bg = resolve_color(self.card_bg_color, self.mode)
+        fg = resolve_color(COLOR_TEXT_PRIMARY, self.mode)
         select_bg = THEME_SELECTION_BG.get(self.mode, THEME_SELECTION_BG["dark"])
 
         try:
@@ -267,10 +334,10 @@ class SelectableTextBlock(tk.Text):
 class RichContentView(ctk.CTkFrame):
     """
     Renders rich HTML content with:
-    - Visible, syntax-highlighted code blocks with 1-click copy buttons.
-    - Selectable multi-line text blocks between code snippets.
-    - Full width expansion and proper height calculation.
-    - Synchronized fast mouse wheel scrolling.
+    - Visible, syntax-highlighted code blocks with 1-click copy buttons and wrap toggle.
+    - Inline code chips, bold/italic, and clickable links inside text.
+    - Multi-line selectable text blocks between code snippets.
+    - Full width expansion and synchronized fast scrolling.
     - Seamless dark/light theme switching.
     """
 
@@ -330,7 +397,7 @@ class RichContentView(ctk.CTkFrame):
                 lang_hint = b.get("language")
                 if raw_code:
                     cw = CodeBlockWidget(self, code=raw_code, language_hint=lang_hint)
-                    cw.pack(fill="x", expand=True, pady=(6, 10))
+                    cw.pack(fill="x", expand=True, pady=(8, 12))
                     self.code_widgets.append(cw)
             else:
                 current_group.append(b)

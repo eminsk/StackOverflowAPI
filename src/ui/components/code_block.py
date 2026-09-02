@@ -1,5 +1,5 @@
 """
-Code Block Widget with Syntax Highlighting, Vertical & Horizontal Scrollbars, and 1-Click Clipboard Copy
+Code Block Widget with Syntax Highlighting, Word Wrap Toggle, Line Counters, and 1-Click Clipboard Copy
 """
 
 import sys
@@ -7,24 +7,28 @@ import tkinter as tk
 import customtkinter as ctk
 from src.utils.highlighter import CodeHighlighter, THEME_COLORS
 from src.ui.theme import (
-    FONT_FAMILY_MONO, COLOR_SUCCESS,
+    FONT_FAMILY_MONO, FONT_FAMILY, COLOR_SUCCESS,
     COLOR_BG_CODE, COLOR_BG_CODE_HEADER, COLOR_BORDER,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_BG_CARD, COLOR_BG_CARD_HOVER
+    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
+    COLOR_BG_CARD, COLOR_BG_CARD_HOVER, COLOR_BG_CARD_ACTIVE,
+    resolve_color
 )
 
 
 class CodeBlockWidget(ctk.CTkFrame):
     """
-    Component displaying a code block with:
-    - Language badge and 1-click clipboard copy button
+    Component displaying a syntax-highlighted code block with:
+    - Language badge & line count
+    - Word wrap toggle (Wrap / Scroll)
+    - 1-click clipboard copy button with visual feedback animation
     - Syntax-highlighted text using Pygments
     - Modern vertical CTkScrollbar for multi-line code
     - Modern horizontal CTkScrollbar for wide lines
-    - Smart MouseWheel scrolling (scrolls code block vertically, forwards to page at boundaries)
+    - Smart MouseWheel scrolling (internal scrolling + boundary forwarding)
     - Shift + MouseWheel horizontal scrolling
     """
 
-    MAX_VISIBLE_LINES = 20
+    MAX_VISIBLE_LINES = 22
 
     def __init__(self, master, code: str, language_hint: str = None, **kwargs):
         super().__init__(
@@ -38,40 +42,73 @@ class CodeBlockWidget(ctk.CTkFrame):
 
         self.code = code
         self.language_hint = language_hint
+        self.is_wrapped = False
 
         mode = ctk.get_appearance_mode().lower()
         if mode not in ("dark", "light"):
             mode = "dark"
         self.mode = mode
 
+        # Tokenize code to get language name
+        self.tokens, self.lang_name = CodeHighlighter.tokenize(code, language_hint)
+        total_lines = max(code.count('\n') + 1, 1)
+        self.total_lines = total_lines
+
         # Header Bar
         self.header_frame = ctk.CTkFrame(
             self,
             fg_color=COLOR_BG_CODE_HEADER,
             corner_radius=6,
-            height=32
+            height=34
         )
         self.header_frame.pack(fill="x", padx=2, pady=2)
         self.header_frame.pack_propagate(False)
 
-        # Tokenize code to get language name
-        self.tokens, self.lang_name = CodeHighlighter.tokenize(code, language_hint)
+        # Left Header: Language Badge
+        left_box = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        left_box.pack(side="left", padx=8, pady=4)
 
-        # Language Label
         self.lang_label = ctk.CTkLabel(
-            self.header_frame,
-            text=f"  ⚡ {self.lang_name}",
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            text_color=COLOR_TEXT_SECONDARY
+            left_box,
+            text=f"⚡ {self.lang_name}",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
         )
-        self.lang_label.pack(side="left", padx=8, pady=4)
+        self.lang_label.pack(side="left")
 
-        # Copy Button
+        # Line Count Badge
+        lines_str = f"{total_lines} line" if total_lines == 1 else f"{total_lines} lines"
+        self.lines_label = ctk.CTkLabel(
+            left_box,
+            text=f"• {lines_str}",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10),
+            text_color=COLOR_TEXT_MUTED
+        )
+        self.lines_label.pack(side="left", padx=(6, 0))
+
+        # Right Header: Wrap Toggle & Copy Button
+        right_box = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        right_box.pack(side="right", padx=6, pady=4)
+
+        self.wrap_btn = ctk.CTkButton(
+            right_box,
+            text="↩ Wrap",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11),
+            width=62,
+            height=22,
+            corner_radius=5,
+            fg_color=COLOR_BG_CARD,
+            hover_color=COLOR_BG_CARD_HOVER,
+            text_color=COLOR_TEXT_SECONDARY,
+            command=self.toggle_wrap
+        )
+        self.wrap_btn.pack(side="left", padx=(0, 6))
+
         self.copy_btn = ctk.CTkButton(
-            self.header_frame,
+            right_box,
             text="📋 Copy Code",
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            width=90,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            width=92,
             height=22,
             corner_radius=5,
             fg_color=COLOR_BG_CARD,
@@ -79,16 +116,14 @@ class CodeBlockWidget(ctk.CTkFrame):
             text_color=COLOR_TEXT_PRIMARY,
             command=self.copy_to_clipboard
         )
-        self.copy_btn.pack(side="right", padx=6, pady=4)
+        self.copy_btn.pack(side="left")
 
         # Code Text Area Frame
-        total_lines = max(code.count('\n') + 1, 2)
         text_height = min(total_lines, self.MAX_VISIBLE_LINES)
-
         theme_palette = THEME_COLORS.get(self.mode, THEME_COLORS["dark"])
 
         self.text_frame = tk.Frame(self, bg=theme_palette["bg"])
-        self.text_frame.pack(fill="x", expand=True, padx=8, pady=(4, 2))
+        self.text_frame.pack(fill="x", expand=True, padx=6, pady=(4, 2))
 
         # Vertical scrollbar (CTkScrollbar)
         self.v_scroll = ctk.CTkScrollbar(
@@ -108,11 +143,13 @@ class CodeBlockWidget(ctk.CTkFrame):
             selectbackground=theme_palette["select_bg"],
             selectforeground=theme_palette["fg"],
             bd=0,
-            padx=8,
+            padx=10,
             pady=6,
             highlightthickness=0,
             relief="flat",
-            cursor="xterm"
+            cursor="xterm",
+            spacing1=1,
+            spacing3=1
         )
 
         # Horizontal scrollbar (CTkScrollbar)
@@ -129,38 +166,57 @@ class CodeBlockWidget(ctk.CTkFrame):
             yscrollcommand=self.v_scroll.set
         )
 
-        # Pack vertical scrollbar and text widget
+        # Pack vertical scrollbar if necessary
         if total_lines > self.MAX_VISIBLE_LINES:
             self.v_scroll.pack(side="right", fill="y", padx=(2, 0))
         self.text_widget.pack(side="left", fill="both", expand=True)
 
-        # Always pack horizontal scrollbar
-        self.h_scroll.pack(fill="x", padx=8, pady=(0, 6))
+        # Pack horizontal scrollbar
+        self.h_scroll.pack(fill="x", padx=6, pady=(0, 6))
 
         # Insert and highlight code
         self.render_highlighted_code()
 
-        # Bind smart mousewheel (vertical scrolling within code, forwarding at bounds)
+        # Bindings
         self.text_widget.bind("<MouseWheel>", self._on_mousewheel)
         self.text_widget.bind("<Shift-MouseWheel>", self._on_shift_mousewheel)
         self.text_widget.bind("<Button-3>", self._show_context_menu)
+        self.text_widget.bind("<Control-c>", self._on_copy_shortcut)
+        self.text_widget.bind("<Control-C>", self._on_copy_shortcut)
+        self.text_widget.bind("<Control-a>", self._on_select_all_shortcut)
+        self.text_widget.bind("<Control-A>", self._on_select_all_shortcut)
 
-        # Make read-only
+        self.text_widget.configure(state="disabled")
+
+    def toggle_wrap(self):
+        """Toggle word wrapping on the code text widget."""
+        self.is_wrapped = not self.is_wrapped
+        self.text_widget.configure(state="normal")
+        if self.is_wrapped:
+            self.text_widget.configure(wrap="char")
+            self.h_scroll.pack_forget()
+            self.wrap_btn.configure(
+                text="↩ Unwrap",
+                fg_color=COLOR_BG_CARD_ACTIVE,
+                text_color=COLOR_TEXT_PRIMARY
+            )
+        else:
+            self.text_widget.configure(wrap="none")
+            self.h_scroll.pack(fill="x", padx=6, pady=(0, 6))
+            self.wrap_btn.configure(
+                text="↩ Wrap",
+                fg_color=COLOR_BG_CARD,
+                text_color=COLOR_TEXT_SECONDARY
+            )
         self.text_widget.configure(state="disabled")
 
     def _on_mousewheel(self, event):
-        """
-        Smart vertical scrolling:
-        - If code block has internal vertical overflow and not at top/bottom boundary,
-          scrolls the code block internally.
-        - Otherwise, forwards scrolling to the parent CTkScrollableFrame.
-        """
+        """Smart vertical scrolling within code block, forwards to page when at boundaries."""
         yv = self.text_widget.yview()
         is_scrollable = yv != (0.0, 1.0)
         delta = event.delta
 
         if is_scrollable:
-            # Negative delta = scroll down, Positive delta = scroll up on Windows
             if delta < 0 and yv[1] < 1.0:
                 self.text_widget.yview("scroll", -int(delta / 40), "units")
                 return "break"
@@ -168,7 +224,7 @@ class CodeBlockWidget(ctk.CTkFrame):
                 self.text_widget.yview("scroll", -int(delta / 40), "units")
                 return "break"
 
-        # Forward to parent page
+        # Forward upward to parent scrollable container
         curr = self.master
         while curr is not None:
             if hasattr(curr, "_parent_canvas") and curr._parent_canvas:
@@ -197,6 +253,8 @@ class CodeBlockWidget(ctk.CTkFrame):
 
     def _on_shift_mousewheel(self, event):
         """Scroll code horizontally when holding Shift + Mouse Wheel."""
+        if self.is_wrapped:
+            return
         try:
             if sys.platform.startswith("win"):
                 delta = -int(event.delta / 6)
@@ -209,12 +267,20 @@ class CodeBlockWidget(ctk.CTkFrame):
         except Exception:
             pass
 
+    def _on_copy_shortcut(self, event=None):
+        self._copy_selection()
+        return "break"
+
+    def _on_select_all_shortcut(self, event=None):
+        self._select_all()
+        return "break"
+
     def _show_context_menu(self, event):
         """Show context menu for copying code."""
         menu = tk.Menu(self.text_widget, tearoff=0)
         has_sel = bool(self.text_widget.tag_ranges("sel"))
         if has_sel:
-            menu.add_command(label="Копировать (Copy)", command=self._copy_selection)
+            menu.add_command(label="Копировать выделенное (Copy)", command=self._copy_selection)
         else:
             menu.add_command(label="Копировать весь код (Copy All)", command=self.copy_to_clipboard)
 
@@ -278,14 +344,11 @@ class CodeBlockWidget(ctk.CTkFrame):
             self.clipboard_append(self.code)
             self.update()
 
-            # Visual feedback
             self.copy_btn.configure(
                 text="✓ Copied!",
                 fg_color=COLOR_SUCCESS,
                 text_color="#ffffff"
             )
-
-            # Revert after 1.8 seconds
             self.after(1800, self.reset_copy_button)
         except Exception as e:
             print(f"Clipboard error: {e}")

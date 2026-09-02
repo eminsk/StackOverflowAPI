@@ -1,7 +1,8 @@
 """
 Question Details & Answers View Component
-Displays full question information, tags, rich selectable body with code copy, 
-1-click answer copy, collapsible comments, and sorted answers with accepted solution styling.
+Displays full question information, tags, rich selectable body with code copy,
+bookmarking, 1-click answer/question copy, in-place smooth comment threads,
+and sorted answers with accepted solution styling.
 """
 
 import html
@@ -9,24 +10,28 @@ import webbrowser
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Callable
 import customtkinter as ctk
+
 from src.ui.components.rich_view import RichContentView
 from src.ui.components.selectable_label import SelectableLabel
 from src.utils.highlighter import html_to_markdown
+from src.utils.bookmarks import BookmarkManager
 from src.ui.theme import (
-    SO_ORANGE, COLOR_SUCCESS, COLOR_PRIMARY,
+    SO_ORANGE, COLOR_SUCCESS, COLOR_PRIMARY, COLOR_BOOKMARK, COLOR_BOOKMARK_HOVER,
     COLOR_BG_WINDOW, COLOR_BG_CARD, COLOR_BG_CARD_HOVER, COLOR_BG_CARD_ACTIVE,
     COLOR_BG_SIDEBAR, COLOR_BG_TAG, COLOR_BORDER, COLOR_BORDER_ACCEPTED,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED, COLOR_TEXT_TAG
+    COLOR_ACCEPTED_BANNER_BG, COLOR_ACCEPTED_BANNER_TEXT, COLOR_ACCEPTED_BANNER_BORDER,
+    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED, COLOR_TEXT_TAG,
+    FONT_FAMILY
 )
 
 
 class QuestionDetailsView(ctk.CTkScrollableFrame):
     """
     Scrollable full-view containing:
-    - Question header, stats, author badge, external link button, copy question button
+    - Question header, stats, author badge, browser link, bookmark button, copy buttons
     - Question tags
-    - Question rich body with selectable text
-    - Question comments accordion drawer
+    - Question rich body with selectable text and syntax-highlighted code
+    - In-place collapsible comments drawer (no scroll reset or flicker!)
     - Answers header & list of answers
     - Answer accepted solution banner, score, copy answer button, rich body, comments
     """
@@ -44,18 +49,22 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         )
 
         self.on_fetch_comments = on_fetch_comments_callback
-        self.current_question = None
-        self.current_answers = []
-        self.current_language = "English"
+        self.bookmark_mgr = BookmarkManager()
 
-        # Comments cache and expanded state
-        self.comments_data = {}  # key -> list of comment dicts
-        self.expanded_comments = set()
+        self.current_question: Optional[Dict[str, Any]] = None
+        self.current_answers: List[Dict[str, Any]] = []
+        self.current_language: str = "English"
+
+        # Comments cache and tracking per widget
+        self.comments_data: Dict[str, List[Dict[str, Any]]] = {}
+        self.comment_subframes: Dict[str, ctk.CTkFrame] = {}
+        self.comment_toggle_buttons: Dict[str, ctk.CTkButton] = {}
+        self.expanded_comments: set = set()
 
         self.show_welcome_state()
 
     def show_welcome_state(self):
-        """Display placeholder when no question is selected."""
+        """Display helpful welcome banner when no question is selected."""
         for child in self.winfo_children():
             child.destroy()
 
@@ -71,26 +80,28 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         icon_lbl = ctk.CTkLabel(
             welcome_card,
             text="⚡",
-            font=ctk.CTkFont(size=42)
+            font=ctk.CTkFont(size=44)
         )
-        icon_lbl.pack(pady=(28, 8))
+        icon_lbl.pack(pady=(32, 10))
 
         title_lbl = ctk.CTkLabel(
             welcome_card,
             text="Stack Overflow Search Pro",
-            font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=20, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
         title_lbl.pack(pady=(0, 8))
 
         desc_lbl = ctk.CTkLabel(
             welcome_card,
-            text="Enter a query in the search bar above to find questions & answers.\nClick any question on the left to view full solutions, selectable text, and code.",
-            font=ctk.CTkFont(family="Segoe UI", size=13),
+            text="Search questions simultaneously across Stack Overflow (English) and Russian Stack Overflow.\n"
+                 "Select any question on the left to read full answers, copy code blocks with 1 click, and save bookmarks.\n\n"
+                 "💡 Tip: Use Ctrl+K to quickly focus the search bar from anywhere.",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=13),
             text_color=COLOR_TEXT_SECONDARY,
             justify="center"
         )
-        desc_lbl.pack(pady=(0, 28))
+        desc_lbl.pack(pady=(0, 32))
 
     def show_loading(self, message: str = "Loading question details..."):
         """Show loading spinner card."""
@@ -109,16 +120,18 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         lbl = ctk.CTkLabel(
             loading_frame,
             text=f"⏳ {message}",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=14, weight="bold"),
             text_color=COLOR_TEXT_SECONDARY
         )
-        lbl.pack(pady=30)
+        lbl.pack(pady=32)
 
     def load_question(self, question: Dict[str, Any], language: str):
         """Render full question details."""
         self.current_question = question
         self.current_language = language
         self.expanded_comments.clear()
+        self.comment_subframes.clear()
+        self.comment_toggle_buttons.clear()
 
         for child in self.winfo_children():
             child.destroy()
@@ -140,7 +153,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         title_lbl = SelectableLabel(
             q_card,
             text=clean_title,
-            font=("Segoe UI", 16, "bold"),
+            font=(FONT_FAMILY, 16, "bold"),
             text_color=COLOR_TEXT_PRIMARY,
             bg_color=COLOR_BG_CARD,
             padx=4,
@@ -148,9 +161,9 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         )
         title_lbl.pack(fill="x", padx=18, pady=(18, 10))
 
-        # Meta Row: Score, Views, Answers, Date, Author, Copy Btn, Link Btn
-        meta_row = ctk.CTkFrame(q_card, fg_color="transparent")
-        meta_row.pack(fill="x", padx=20, pady=(0, 12))
+        # Meta Row 1: Score, Views, Date, Author
+        meta_row1 = ctk.CTkFrame(q_card, fg_color="transparent")
+        meta_row1.pack(fill="x", padx=20, pady=(0, 8))
 
         score = question.get("score", 0)
         view_count = question.get("view_count", 0)
@@ -160,50 +173,105 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         author = owner.get("display_name", "Anonymous")
         rep = owner.get("reputation", 0)
         link = question.get("link", "")
+        q_id = question.get("question_id", 0)
 
         # Score badge
         score_color = COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else "#ef4444")
         s_lbl = ctk.CTkLabel(
-            meta_row,
+            meta_row1,
             text=f"▲ {score}",
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
             text_color=score_color
         )
         s_lbl.pack(side="left", padx=(0, 12))
 
         # Views
         v_lbl = ctk.CTkLabel(
-            meta_row,
+            meta_row1,
             text=f"👁 {view_count:,} views",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12),
             text_color=COLOR_TEXT_MUTED
         )
         v_lbl.pack(side="left", padx=(0, 12))
 
         # Date
         d_lbl = ctk.CTkLabel(
-            meta_row,
+            meta_row1,
             text=f"📅 {created_str}",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12),
             text_color=COLOR_TEXT_MUTED
         )
         d_lbl.pack(side="left", padx=(0, 12))
 
         # Author Pill
         a_lbl = ctk.CTkLabel(
-            meta_row,
+            meta_row1,
             text=f"👤 {author} ({rep:,} rep)",
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
             text_color=COLOR_TEXT_SECONDARY
         )
         a_lbl.pack(side="left", padx=(0, 12))
 
-        # Open in Browser button
+        # Meta Row 2: Action Toolbar (Bookmark, Copy Question, Copy Link, Browser)
+        action_row = ctk.CTkFrame(q_card, fg_color="transparent")
+        action_row.pack(fill="x", padx=20, pady=(0, 12))
+
+        # Bookmark Button
+        is_bookmarked = self.bookmark_mgr.is_bookmarked(q_id)
+        bm_text = "★ Saved" if is_bookmarked else "☆ Save"
+        bm_fg = COLOR_BOOKMARK if is_bookmarked else COLOR_BG_CARD_ACTIVE
+        bm_txt_color = "#ffffff" if is_bookmarked else COLOR_TEXT_PRIMARY
+
+        self.bm_btn = ctk.CTkButton(
+            action_row,
+            text=bm_text,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            width=78,
+            height=26,
+            corner_radius=6,
+            fg_color=bm_fg,
+            hover_color=COLOR_BOOKMARK_HOVER if is_bookmarked else COLOR_BG_CARD_HOVER,
+            text_color=bm_txt_color,
+            command=lambda: self.toggle_bookmark(question, language)
+        )
+        self.bm_btn.pack(side="left", padx=(0, 8))
+
+        # Copy Question Button
+        copy_q_btn = ctk.CTkButton(
+            action_row,
+            text="📋 Copy Question",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            width=115,
+            height=26,
+            corner_radius=6,
+            fg_color=COLOR_BG_CARD_ACTIVE,
+            hover_color=COLOR_BG_CARD_HOVER,
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        copy_q_btn.configure(command=lambda btn=copy_q_btn, q=question: self.copy_question_to_clipboard(q, btn))
+        copy_q_btn.pack(side="left", padx=(0, 8))
+
+        # Copy Link Button
         if link:
+            copy_link_btn = ctk.CTkButton(
+                action_row,
+                text="🔗 Copy Link",
+                font=ctk.CTkFont(family=FONT_FAMILY, size=11),
+                width=88,
+                height=26,
+                corner_radius=6,
+                fg_color=COLOR_BG_CARD_ACTIVE,
+                hover_color=COLOR_BG_CARD_HOVER,
+                text_color=COLOR_TEXT_PRIMARY,
+                command=lambda btn=action_row, u=link: self.copy_link_to_clipboard(u)
+            )
+            copy_link_btn.pack(side="left", padx=(0, 8))
+
+            # Open in Browser button
             link_btn = ctk.CTkButton(
-                meta_row,
+                action_row,
                 text="🌐 Browser",
-                font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+                font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
                 width=80,
                 height=26,
                 corner_radius=6,
@@ -213,21 +281,6 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 command=lambda: webbrowser.open(link)
             )
             link_btn.pack(side="right")
-
-        # Copy Question Button
-        copy_q_btn = ctk.CTkButton(
-            meta_row,
-            text="📋 Copy Question",
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            width=115,
-            height=26,
-            corner_radius=6,
-            fg_color=COLOR_BG_CARD_ACTIVE,
-            hover_color=COLOR_BG_CARD_HOVER,
-            text_color=COLOR_TEXT_PRIMARY
-        )
-        copy_q_btn.configure(command=lambda btn=copy_q_btn, q=question: self.copy_question_to_clipboard(q, btn))
-        copy_q_btn.pack(side="right", padx=(0, 8))
 
         # Tags Row
         tags = question.get("tags", [])
@@ -239,7 +292,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 t_lbl = ctk.CTkLabel(
                     tags_row,
                     text=f" {tag} ",
-                    font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+                    font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
                     fg_color=COLOR_BG_TAG,
                     text_color=COLOR_TEXT_TAG,
                     corner_radius=4
@@ -248,15 +301,14 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
 
         # Divider
         divider = ctk.CTkFrame(q_card, height=1, fg_color=COLOR_BORDER)
-        divider.pack(fill="x", padx=20, pady=(4, 14))
+        divider.pack(fill="x", padx=20, pady=(2, 14))
 
-        # Question Body (Selectable)
+        # Question Body (Selectable Rich View with inline tags & code blocks)
         body_html = question.get("body", "<p>No body text</p>")
         rich_body = RichContentView(q_card, html_content=body_html, wraplength=660, bg_color=COLOR_BG_CARD)
         rich_body.pack(fill="x", expand=True, padx=20, pady=(0, 14))
 
         # Question Comments Section
-        q_id = question.get("question_id", 0)
         comment_count = question.get("comment_count", 0)
         self.render_comments_accordion(q_card, item_id=q_id, comment_count=comment_count, item_type="question")
 
@@ -264,14 +316,41 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         self.answers_container = ctk.CTkFrame(self, fg_color="transparent")
         self.answers_container.pack(fill="x", padx=16, pady=(8, 20))
 
-        # Answers loading state placeholder
+        # Loading placeholder for answers
         loading_ans_lbl = ctk.CTkLabel(
             self.answers_container,
             text="⏳ Loading answers...",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
             text_color=COLOR_TEXT_MUTED
         )
         loading_ans_lbl.pack(pady=16)
+
+    def toggle_bookmark(self, question: Dict[str, Any], language: str):
+        """Toggle bookmark state and update UI button."""
+        now_bookmarked = self.bookmark_mgr.toggle_bookmark(question, language)
+        if now_bookmarked:
+            self.bm_btn.configure(
+                text="★ Saved",
+                fg_color=COLOR_BOOKMARK,
+                hover_color=COLOR_BOOKMARK_HOVER,
+                text_color="#ffffff"
+            )
+        else:
+            self.bm_btn.configure(
+                text="☆ Save",
+                fg_color=COLOR_BG_CARD_ACTIVE,
+                hover_color=COLOR_BG_CARD_HOVER,
+                text_color=COLOR_TEXT_PRIMARY
+            )
+
+    def copy_link_to_clipboard(self, url: str):
+        """Copy question link to clipboard."""
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(url)
+            self.update()
+        except Exception as e:
+            print(f"Error copying link: {e}")
 
     def display_answers(self, answers_list: List[Dict[str, Any]]):
         """Render answers list."""
@@ -293,7 +372,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             lbl = ctk.CTkLabel(
                 no_ans_card,
                 text="💭 No answers available for this question yet.",
-                font=ctk.CTkFont(family="Segoe UI", size=13),
+                font=ctk.CTkFont(family=FONT_FAMILY, size=13),
                 text_color=COLOR_TEXT_MUTED
             )
             lbl.pack(pady=20)
@@ -306,17 +385,24 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         ans_count_lbl = ctk.CTkLabel(
             hdr_frame,
             text=f"💡 Answers ({len(answers_list)})",
-            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=16, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
         ans_count_lbl.pack(side="left")
 
+        # Sort answers: accepted first, then by score descending
+        sorted_answers = sorted(
+            answers_list,
+            key=lambda a: (1 if a.get("is_accepted") else 0, a.get("score", 0)),
+            reverse=True
+        )
+
         # Render each answer
-        for idx, ans in enumerate(answers_list, 1):
+        for idx, ans in enumerate(sorted_answers, 1):
             self.render_answer_card(self.answers_container, ans, idx)
 
     def render_answer_card(self, parent, ans_data: Dict[str, Any], index: int):
-        """Render a single answer card with copy button and selectable rich body."""
+        """Render a single answer card with accepted banner, copy button, and selectable rich body."""
         is_accepted = ans_data.get("is_accepted", False)
         score = ans_data.get("score", 0)
         owner = ans_data.get("owner", {})
@@ -339,27 +425,42 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         )
         card.pack(fill="x", pady=8)
 
-        # Header Row
-        hdr = ctk.CTkFrame(card, fg_color="transparent")
-        hdr.pack(fill="x", padx=18, pady=(14, 8))
-
-        # Accepted Solution Pill
+        # Top Accepted Solution Banner
         if is_accepted:
-            acc_pill = ctk.CTkLabel(
-                hdr,
-                text=" ✓ ACCEPTED SOLUTION ",
-                font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-                fg_color=COLOR_SUCCESS,
-                text_color="#ffffff",
-                corner_radius=5
+            banner = ctk.CTkFrame(
+                card,
+                fg_color=COLOR_ACCEPTED_BANNER_BG,
+                corner_radius=8,
+                height=34
             )
-            acc_pill.pack(side="left", padx=(0, 10))
+            banner.pack(fill="x", padx=12, pady=(12, 4))
+            banner.pack_propagate(False)
+
+            b_icon = ctk.CTkLabel(
+                banner,
+                text="✓ ACCEPTED SOLUTION",
+                font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+                text_color=COLOR_SUCCESS
+            )
+            b_icon.pack(side="left", padx=12)
+
+            b_desc = ctk.CTkLabel(
+                banner,
+                text="• Verified and accepted by the question author",
+                font=ctk.CTkFont(family=FONT_FAMILY, size=11),
+                text_color=COLOR_TEXT_SECONDARY
+            )
+            b_desc.pack(side="left")
+
+        # Answer Header Row
+        hdr = ctk.CTkFrame(card, fg_color="transparent")
+        hdr.pack(fill="x", padx=18, pady=(12 if not is_accepted else 6, 8))
 
         # Answer #
         num_lbl = ctk.CTkLabel(
             hdr,
             text=f"Answer #{index}",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
         num_lbl.pack(side="left", padx=(0, 12))
@@ -369,7 +470,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         s_lbl = ctk.CTkLabel(
             hdr,
             text=f"▲ {score}",
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
             text_color=score_color
         )
         s_lbl.pack(side="left", padx=(0, 12))
@@ -378,7 +479,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         copy_ans_btn = ctk.CTkButton(
             hdr,
             text="📋 Copy Answer",
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
             width=105,
             height=24,
             corner_radius=6,
@@ -393,7 +494,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         by_lbl = ctk.CTkLabel(
             hdr,
             text=f"by {author} ({rep:,} rep) • {created_str}",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12),
             text_color=COLOR_TEXT_SECONDARY
         )
         by_lbl.pack(side="right")
@@ -438,7 +539,6 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             self.clipboard_append(full_text)
             self.update()
 
-            # Visual feedback
             btn.configure(
                 text="✓ Copied!",
                 fg_color=COLOR_SUCCESS,
@@ -458,7 +558,6 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             self.clipboard_append(body_md)
             self.update()
 
-            # Visual feedback
             btn.configure(
                 text="✓ Copied!",
                 fg_color=COLOR_SUCCESS,
@@ -469,7 +568,6 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             print(f"Error copying answer: {e}")
 
     def _reset_copy_btn(self, btn: ctk.CTkButton, text: str):
-        """Reset copy button text and color."""
         try:
             btn.configure(
                 text=text,
@@ -480,44 +578,95 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             pass
 
     def render_comments_accordion(self, parent_card, item_id: int, comment_count: int, item_type: str = "answer"):
-        """Render collapsible comments drawer for question or answer."""
+        """Render collapsible comments drawer with in-place expansion (no scroll reset)."""
         if comment_count <= 0:
             return
 
         cache_key = f"{self.current_language}_{item_type}_{item_id}"
-        is_expanded = cache_key in self.expanded_comments
 
         comments_container = ctk.CTkFrame(parent_card, fg_color="transparent")
         comments_container.pack(fill="x", padx=18, pady=(4, 12))
 
-        btn_text = f"▲ Hide Comments ({comment_count})" if is_expanded else f"💬 Show Comments ({comment_count})"
         toggle_btn = ctk.CTkButton(
             comments_container,
-            text=btn_text,
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            width=140,
+            text=f"💬 Show Comments ({comment_count})",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            width=145,
             height=24,
             corner_radius=6,
             fg_color=COLOR_BG_CARD_ACTIVE,
             hover_color=COLOR_BG_CARD_HOVER,
             text_color=COLOR_TEXT_SECONDARY,
-            command=lambda: self.toggle_comments(item_id, item_type, cache_key)
+            command=lambda: self.toggle_comments(item_id, item_type, cache_key, comment_count)
         )
-        toggle_btn.pack(anchor="w", pady=(0, 6))
+        toggle_btn.pack(anchor="w", pady=(0, 4))
+        self.comment_toggle_buttons[cache_key] = toggle_btn
 
-        if is_expanded:
-            comments = self.comments_data.get(cache_key, [])
-            if not comments:
+        # Subframe where comments are inserted dynamically
+        subframe = ctk.CTkFrame(comments_container, fg_color="transparent")
+        subframe.pack(fill="x")
+        self.comment_subframes[cache_key] = subframe
+
+    def toggle_comments(self, item_id: int, item_type: str, cache_key: str, comment_count: int):
+        """Toggle comment visibility smoothly in-place without reloading the whole page."""
+        subframe = self.comment_subframes.get(cache_key)
+        toggle_btn = self.comment_toggle_buttons.get(cache_key)
+        if not subframe:
+            return
+
+        if cache_key in self.expanded_comments:
+            # Collapse comments
+            self.expanded_comments.remove(cache_key)
+            for child in subframe.winfo_children():
+                child.destroy()
+            if toggle_btn:
+                toggle_btn.configure(text=f"💬 Show Comments ({comment_count})")
+        else:
+            # Expand comments
+            self.expanded_comments.add(cache_key)
+            if toggle_btn:
+                toggle_btn.configure(text=f"▲ Hide Comments ({comment_count})")
+
+            # Check if comments already cached
+            if cache_key in self.comments_data:
+                self._populate_comments_in_subframe(subframe, self.comments_data[cache_key])
+            else:
+                # Show loading placeholder inside subframe and fetch
                 loading_lbl = ctk.CTkLabel(
-                    comments_container,
+                    subframe,
                     text="⏳ Loading comments...",
-                    font=ctk.CTkFont(family="Segoe UI", size=11),
+                    font=ctk.CTkFont(family=FONT_FAMILY, size=11),
                     text_color=COLOR_TEXT_MUTED
                 )
                 loading_lbl.pack(anchor="w", padx=10, pady=4)
-            else:
-                for c in comments:
-                    self.render_comment_item(comments_container, c)
+                self.on_fetch_comments(item_id, self.current_language, item_type)
+
+    def _populate_comments_in_subframe(self, subframe: ctk.CTkFrame, comments: List[Dict[str, Any]]):
+        """Populate comments into their dedicated subframe."""
+        for child in subframe.winfo_children():
+            child.destroy()
+
+        if not comments:
+            lbl = ctk.CTkLabel(
+                subframe,
+                text="No comments found.",
+                font=ctk.CTkFont(family=FONT_FAMILY, size=11),
+                text_color=COLOR_TEXT_MUTED
+            )
+            lbl.pack(anchor="w", padx=10, pady=4)
+            return
+
+        for c in comments:
+            self.render_comment_item(subframe, c)
+
+    def set_comments(self, item_id: int, language: str, item_type: str, comments: List[Dict[str, Any]]):
+        """Store comments and populate them smoothly in-place."""
+        cache_key = f"{language}_{item_type}_{item_id}"
+        self.comments_data[cache_key] = comments
+
+        subframe = self.comment_subframes.get(cache_key)
+        if subframe and cache_key in self.expanded_comments:
+            self._populate_comments_in_subframe(subframe, comments)
 
     def render_comment_item(self, parent, comment_dict: Dict[str, Any]):
         """Render an individual comment pill with selectable text."""
@@ -541,7 +690,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         txt_lbl = SelectableLabel(
             c_frame,
             text=c_body,
-            font=("Segoe UI", 11),
+            font=(FONT_FAMILY, 11),
             text_color=COLOR_TEXT_PRIMARY,
             bg_color=COLOR_BG_SIDEBAR,
             padx=8,
@@ -557,30 +706,13 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         meta_lbl = ctk.CTkLabel(
             meta_frame,
             text=f"{score_txt}👤 {c_author} • {c_date}",
-            font=ctk.CTkFont(family="Segoe UI", size=10),
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10),
             text_color=COLOR_TEXT_MUTED
         )
         meta_lbl.pack(side="left")
 
-    def toggle_comments(self, item_id: int, item_type: str, cache_key: str):
-        """Toggle comment expansion and fetch if not cached."""
-        if cache_key in self.expanded_comments:
-            self.expanded_comments.remove(cache_key)
-            self.refresh_view()
-        else:
-            self.expanded_comments.add(cache_key)
-            if cache_key not in self.comments_data:
-                self.on_fetch_comments(item_id, self.current_language, item_type)
-            self.refresh_view()
-
-    def set_comments(self, item_id: int, language: str, item_type: str, comments: List[Dict[str, Any]]):
-        """Store comments and refresh UI."""
-        cache_key = f"{language}_{item_type}_{item_id}"
-        self.comments_data[cache_key] = comments
-        self.refresh_view()
-
     def refresh_view(self):
-        """Re-render current question and answers to update accordions and theme."""
+        """Re-render current question and answers when theme changes."""
         if self.current_question:
             self.load_question(self.current_question, self.current_language)
             if self.current_answers:

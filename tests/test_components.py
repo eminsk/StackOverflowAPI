@@ -6,8 +6,11 @@ import customtkinter as ctk
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.api.stackoverflow import StackOverflowAPI
-from src.utils.highlighter import parse_html_to_blocks, html_to_markdown, CodeHighlighter
+from src.utils.highlighter import parse_html_to_blocks, html_to_markdown, CodeHighlighter, extract_text_preview
+from src.utils.bookmarks import BookmarkManager
 from src.ui.components.selectable_label import SelectableLabel
+from src.ui.components.code_block import CodeBlockWidget
+from src.ui.components.question_card import QuestionCard
 from src.ui.components.rich_view import RichContentView
 from src.ui.components.details_view import QuestionDetailsView
 from src.ui.app import StackOverflowApp
@@ -19,19 +22,39 @@ class TestStackOverflow(unittest.TestCase):
         res = api.search_questions("python json", language="English", pagesize=2)
         self.assertIn("items", res)
         self.assertTrue(len(res["items"]) > 0)
+        self.assertIsNotNone(api.last_quota_remaining)
 
-    def test_html_parsing(self):
-        sample_html = '<p>Test paragraph</p><pre><code class="lang-python">x = 42</code></pre><blockquote>Quote</blockquote>'
+    def test_html_parsing_and_inline_segments(self):
+        sample_html = (
+            '<p>Use <code>requests.get()</code> with <strong>timeout=5</strong>. '
+            'See <a href="https://example.com">here</a>.</p>'
+            '<pre><code class="lang-python">x = 42</code></pre>'
+            '<blockquote>Important note</blockquote>'
+        )
         blocks = parse_html_to_blocks(sample_html)
         self.assertEqual(len(blocks), 3)
         self.assertEqual(blocks[0]["type"], "paragraph")
         self.assertEqual(blocks[1]["type"], "code")
         self.assertEqual(blocks[2]["type"], "blockquote")
 
+        # Verify inline segments
+        segments = blocks[0]["segments"]
+        tags = [seg[1] for seg in segments]
+        self.assertIn("code_inline", tags)
+        self.assertIn("bold", tags)
+        self.assertIn("link", tags)
+
+    def test_text_preview_extractor(self):
+        html = "<p>This is a <strong>great</strong> description.<pre><code>def foo(): pass</code></pre>Follow these steps.</p>"
+        preview = extract_text_preview(html, max_chars=50)
+        self.assertIn("This is a great description.", preview)
+        self.assertNotIn("def foo():", preview)
+
     def test_html_to_markdown(self):
-        sample_html = '<p>Explanation here</p><pre><code class="lang-python">print("hello")</code></pre><blockquote>Quoted advice</blockquote>'
+        sample_html = '<p>Explanation here with <code>inline_code</code></p><pre><code class="lang-python">print("hello")</code></pre><blockquote>Quoted advice</blockquote>'
         md = html_to_markdown(sample_html)
         self.assertIn("Explanation here", md)
+        self.assertIn("`inline_code`", md)
         self.assertIn("```python", md)
         self.assertIn('print("hello")', md)
         self.assertIn("> Quoted advice", md)
@@ -41,40 +64,94 @@ class TestStackOverflow(unittest.TestCase):
         self.assertEqual(lang, "PYTHON")
         self.assertTrue(len(tokens) > 0)
 
+    def test_code_block_wrap_toggle(self):
+        root = ctk.CTk()
+        cw = CodeBlockWidget(root, code="long_line = " + "x" * 150)
+        cw.pack()
+        root.update()
+
+        self.assertFalse(cw.is_wrapped)
+        cw.toggle_wrap()
+        self.assertTrue(cw.is_wrapped)
+        cw.toggle_wrap()
+        self.assertFalse(cw.is_wrapped)
+        root.destroy()
+
+    def test_bookmark_manager(self):
+        bm = BookmarkManager()
+        test_q = {
+            "question_id": 999888,
+            "title": "Bookmark Test Question",
+            "score": 5,
+            "owner": {"display_name": "Tester"},
+            "creation_date": 1600000000
+        }
+        # Clean state
+        bm.remove_bookmark(999888)
+        self.assertFalse(bm.is_bookmarked(999888))
+
+        # Add
+        bm.add_bookmark(test_q, "English")
+        self.assertTrue(bm.is_bookmarked(999888))
+        self.assertIsNotNone(bm.get_bookmark(999888))
+
+        # Toggle
+        res = bm.toggle_bookmark(test_q, "English")
+        self.assertFalse(res)
+        self.assertFalse(bm.is_bookmarked(999888))
+
+    def test_question_card_selection(self):
+        root = ctk.CTk()
+        sample_q = {
+            "question_id": 777,
+            "title": "Card Selection Question",
+            "score": 12,
+            "answer_count": 3,
+            "is_answered": True,
+            "view_count": 1400,
+            "tags": ["python", "asyncio"],
+            "owner": {"display_name": "DevGuy", "reputation": 2500},
+            "body": "<p>Preview body text</p>"
+        }
+        card = QuestionCard(root, question_data=sample_q, on_click_callback=lambda q_id, c: None)
+        card.pack()
+        root.update()
+
+        self.assertFalse(card.is_selected)
+        card.set_selected(True)
+        self.assertTrue(card.is_selected)
+        card.set_selected(False)
+        self.assertFalse(card.is_selected)
+        root.destroy()
+
     def test_selectable_label(self):
         root = ctk.CTk()
         lbl = SelectableLabel(root, text="Selectable test paragraph")
         lbl.pack()
         root.update()
 
-        # Check content and select all
         lbl._select_all()
         selected = lbl.get("sel.first", "sel.last")
         self.assertEqual(selected, "Selectable test paragraph")
 
-        # Test theme adaptation
         lbl.apply_theme("light")
         lbl.apply_theme("dark")
-
         root.destroy()
 
     def test_rich_content_view_selectable(self):
         root = ctk.CTk()
-        html = '<p>First paragraph with multiple words</p><pre><code>let y = 10;</code></pre><ul><li>Item 1</li><li>Item 2</li></ul>'
+        html = '<p>First paragraph with multiple words and <code>inline_code</code></p><pre><code>let y = 10;</code></pre><ul><li>Item 1</li><li>Item 2</li></ul>'
         rich = RichContentView(root, html_content=html)
         rich.pack(fill="x")
         root.update()
 
-        # Verify text blocks and code widgets exist and are visible
         self.assertEqual(len(rich.text_blocks), 2)
         self.assertEqual(len(rich.code_widgets), 1)
 
-        # Verify code widget is mapped and has positive width/height
         cw = rich.code_widgets[0]
         self.assertGreater(cw.winfo_width(), 0)
         self.assertGreater(cw.winfo_height(), 0)
 
-        # Verify text selection in text block
         tb = rich.text_blocks[0]
         tb._select_all()
         selected = tb.get("sel.first", "sel.last")
