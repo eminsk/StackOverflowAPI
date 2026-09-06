@@ -8,23 +8,29 @@ code blocks, 1-click code copying, and continuous multi-line text selection.
 import sys
 import tkinter as tk
 import webbrowser
-from typing import Dict, Any, List, Union, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import customtkinter as ctk
-from src.utils.highlighter import parse_html_to_blocks
+
 from src.ui.components.code_block import CodeBlockWidget
 from src.ui.theme import (
-    SO_ORANGE, COLOR_PRIMARY, COLOR_TEXT_LINK,
-    COLOR_BG_CARD, COLOR_BG_BLOCKQUOTE, COLOR_BORDER,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
-    COLOR_INLINE_CODE_BG, COLOR_INLINE_CODE_FG,
-    FONT_FAMILY, FONT_FAMILY_MONO, resolve_color
+    COLOR_BG_BLOCKQUOTE,
+    COLOR_BG_CARD,
+    COLOR_INLINE_CODE_BG,
+    COLOR_INLINE_CODE_FG,
+    COLOR_TEXT_LINK,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
+    FONT_FAMILY,
+    FONT_FAMILY_MONO,
+    SO_ORANGE,
+    resolve_color,
 )
+from src.utils.highlighter import parse_html_to_blocks
 
 # Selection background colors for light and dark modes
-THEME_SELECTION_BG = {
-    "dark": "#3e4259",
-    "light": "#cbd5e1"
-}
+THEME_SELECTION_BG = {"dark": "#3e4259", "light": "#cbd5e1"}
 
 
 class SelectableTextBlock(tk.Text):
@@ -38,7 +44,7 @@ class SelectableTextBlock(tk.Text):
         master,
         blocks: List[Dict[str, Any]],
         bg_color: Union[str, Tuple[str, str]] = COLOR_BG_CARD,
-        **kwargs
+        **kwargs,
     ):
         self.blocks = blocks
         self.card_bg_color = bg_color
@@ -67,7 +73,7 @@ class SelectableTextBlock(tk.Text):
             cursor="xterm",
             spacing1=2,
             spacing3=2,
-            **kwargs
+            **kwargs,
         )
 
         self._setup_tags()
@@ -96,10 +102,18 @@ class SelectableTextBlock(tk.Text):
         fg_inline_code = resolve_color(COLOR_INLINE_CODE_FG, self.mode)
         fg_link = resolve_color(COLOR_TEXT_LINK, self.mode)
 
-        self.tag_configure("p", font=(FONT_FAMILY, 12), foreground=fg_primary, spacing1=3, spacing3=6)
-        self.tag_configure("h1", font=(FONT_FAMILY, 16, "bold"), foreground=fg_primary, spacing1=10, spacing3=4)
-        self.tag_configure("h2", font=(FONT_FAMILY, 14, "bold"), foreground=fg_primary, spacing1=8, spacing3=4)
-        self.tag_configure("h3", font=(FONT_FAMILY, 13, "bold"), foreground=fg_primary, spacing1=6, spacing3=3)
+        self.tag_configure(
+            "p", font=(FONT_FAMILY, 12), foreground=fg_primary, spacing1=3, spacing3=6
+        )
+        self.tag_configure(
+            "h1", font=(FONT_FAMILY, 16, "bold"), foreground=fg_primary, spacing1=10, spacing3=4
+        )
+        self.tag_configure(
+            "h2", font=(FONT_FAMILY, 14, "bold"), foreground=fg_primary, spacing1=8, spacing3=4
+        )
+        self.tag_configure(
+            "h3", font=(FONT_FAMILY, 13, "bold"), foreground=fg_primary, spacing1=6, spacing3=3
+        )
         self.tag_configure(
             "blockquote",
             font=(FONT_FAMILY, 11, "italic"),
@@ -108,7 +122,7 @@ class SelectableTextBlock(tk.Text):
             lmargin2=16,
             background=bg_quote,
             spacing1=4,
-            spacing3=4
+            spacing3=4,
         )
         self.tag_configure(
             "list_item",
@@ -117,7 +131,7 @@ class SelectableTextBlock(tk.Text):
             lmargin1=8,
             lmargin2=24,
             spacing1=2,
-            spacing3=2
+            spacing3=2,
         )
         self.tag_configure("list_bullet", font=(FONT_FAMILY, 12, "bold"), foreground=SO_ORANGE)
         self.tag_configure("muted", font=(FONT_FAMILY, 11), foreground=fg_muted)
@@ -127,11 +141,16 @@ class SelectableTextBlock(tk.Text):
             "code_inline",
             font=(FONT_FAMILY_MONO, 10, "bold"),
             background=bg_inline_code,
-            foreground=fg_inline_code
+            foreground=fg_inline_code,
         )
         self.tag_configure("bold", font=(FONT_FAMILY, 12, "bold"), foreground=fg_primary)
         self.tag_configure("italic", font=(FONT_FAMILY, 12, "italic"), foreground=fg_secondary)
-        self.tag_configure("kbd", font=(FONT_FAMILY_MONO, 9, "bold"), background=bg_inline_code, foreground=fg_primary)
+        self.tag_configure(
+            "kbd",
+            font=(FONT_FAMILY_MONO, 9, "bold"),
+            background=bg_inline_code,
+            foreground=fg_primary,
+        )
         self.tag_configure("link_default", font=(FONT_FAMILY, 12, "underline"), foreground=fg_link)
 
     def _insert_segments(self, segments: List[Tuple[str, str, Optional[str]]], base_tag: str):
@@ -153,7 +172,9 @@ class SelectableTextBlock(tk.Text):
             elif tag_type == "link" and opt_url:
                 self._link_counter += 1
                 link_tag = f"link_{self._link_counter}"
-                self.tag_configure(link_tag, font=(FONT_FAMILY, 12, "underline"), foreground=fg_link)
+                self.tag_configure(
+                    link_tag, font=(FONT_FAMILY, 12, "underline"), foreground=fg_link
+                )
                 self.tag_bind(link_tag, "<Button-1>", lambda e, u=opt_url: webbrowser.open(u))
                 self.tag_bind(link_tag, "<Enter>", lambda e: self.configure(cursor="hand2"))
                 self.tag_bind(link_tag, "<Leave>", lambda e: self.configure(cursor="xterm"))
@@ -320,12 +341,7 @@ class SelectableTextBlock(tk.Text):
         select_bg = THEME_SELECTION_BG.get(self.mode, THEME_SELECTION_BG["dark"])
 
         try:
-            self.configure(
-                bg=bg,
-                fg=fg,
-                selectbackground=select_bg,
-                selectforeground=fg
-            )
+            self.configure(bg=bg, fg=fg, selectbackground=select_bg, selectforeground=fg)
             self._setup_tags()
         except Exception:
             pass
@@ -347,13 +363,9 @@ class RichContentView(ctk.CTkFrame):
         html_content: str,
         wraplength: int = 680,
         bg_color: Union[str, Tuple[str, str]] = COLOR_BG_CARD,
-        **kwargs
+        **kwargs,
     ):
-        super().__init__(
-            master,
-            fg_color="transparent",
-            **kwargs
-        )
+        super().__init__(master, fg_color="transparent", **kwargs)
 
         self.html_content = html_content
         self.wraplength = wraplength
@@ -384,7 +396,9 @@ class RichContentView(ctk.CTkFrame):
 
         def flush_group():
             if current_group:
-                tb = SelectableTextBlock(self, blocks=list(current_group), bg_color=self.card_bg_color)
+                tb = SelectableTextBlock(
+                    self, blocks=list(current_group), bg_color=self.card_bg_color
+                )
                 tb.pack(fill="x", expand=True, pady=(2, 4))
                 self.text_blocks.append(tb)
                 current_group.clear()

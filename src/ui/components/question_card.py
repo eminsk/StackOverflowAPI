@@ -4,19 +4,31 @@ Features score badges, answer count pills, teaser excerpts, author reputation,
 active selection highlighting, and bookmark indicators.
 """
 
-from datetime import datetime
 import html
-from typing import Dict, Any, Callable, Optional
+from datetime import datetime
+from typing import Any, Callable, Dict
+
 import customtkinter as ctk
-from src.utils.highlighter import extract_text_preview
-from src.utils.bookmarks import BookmarkManager
+
 from src.ui.theme import (
-    SO_ORANGE, COLOR_SUCCESS, COLOR_PRIMARY, COLOR_DANGER, COLOR_BOOKMARK,
-    COLOR_BG_CARD, COLOR_BG_CARD_HOVER, COLOR_BG_CARD_ACTIVE,
-    COLOR_BG_SIDEBAR, COLOR_BG_TAG, COLOR_BORDER,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED, COLOR_TEXT_TAG,
-    FONT_FAMILY
+    COLOR_BG_CARD,
+    COLOR_BG_CARD_ACTIVE,
+    COLOR_BG_CARD_HOVER,
+    COLOR_BG_SIDEBAR,
+    COLOR_BG_TAG,
+    COLOR_BOOKMARK,
+    COLOR_BORDER,
+    COLOR_DANGER,
+    COLOR_SUCCESS,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
+    COLOR_TEXT_TAG,
+    FONT_FAMILY,
+    SO_ORANGE,
 )
+from src.utils.bookmarks import BookmarkManager
+from src.utils.highlighter import extract_text_preview
 
 
 class QuestionCard(ctk.CTkFrame):
@@ -38,8 +50,8 @@ class QuestionCard(ctk.CTkFrame):
         self,
         master,
         question_data: Dict[str, Any],
-        on_click_callback: Callable[[int, 'QuestionCard'], None],
-        **kwargs
+        on_click_callback: Callable[[int, "QuestionCard"], None],
+        **kwargs,
     ):
         self.normal_bg = COLOR_BG_CARD
         self.hover_bg = COLOR_BG_CARD_HOVER
@@ -53,7 +65,7 @@ class QuestionCard(ctk.CTkFrame):
             border_width=1,
             corner_radius=10,
             cursor="hand2",
-            **kwargs
+            **kwargs,
         )
 
         self.question_data = question_data
@@ -82,9 +94,9 @@ class QuestionCard(ctk.CTkFrame):
 
         # Formatting Views (e.g. 1.5k, 2.4M)
         if view_count >= 1000000:
-            views_formatted = f"{view_count/1000000:.1f}M"
+            views_formatted = f"{view_count / 1000000:.1f}M"
         elif view_count >= 1000:
-            views_formatted = f"{view_count/1000:.1f}k"
+            views_formatted = f"{view_count / 1000:.1f}k"
         else:
             views_formatted = str(view_count)
 
@@ -94,12 +106,14 @@ class QuestionCard(ctk.CTkFrame):
 
         # Score Badge
         score_prefix = "▲ " if score >= 0 else "▼ "
-        score_color = COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else COLOR_DANGER)
+        score_color = (
+            COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else COLOR_DANGER)
+        )
         self.score_badge = ctk.CTkLabel(
             self.top_row,
             text=f"{score_prefix}{score}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
-            text_color=score_color
+            text_color=score_color,
         )
         self.score_badge.pack(side="left", padx=(0, 8))
 
@@ -123,7 +137,7 @@ class QuestionCard(ctk.CTkFrame):
             font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
             fg_color=ans_bg,
             text_color=ans_fg,
-            corner_radius=5
+            corner_radius=5,
         )
         self.ans_pill.pack(side="left", padx=(0, 8))
 
@@ -132,17 +146,14 @@ class QuestionCard(ctk.CTkFrame):
             self.top_row,
             text=f"👁 {views_formatted}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         self.views_label.pack(side="left", padx=(0, 8))
 
         # Bookmark Indicator (if saved)
         if self.bookmark_mgr.is_bookmarked(self.question_id):
             self.bm_star = ctk.CTkLabel(
-                self.top_row,
-                text="⭐",
-                font=ctk.CTkFont(size=11),
-                text_color=COLOR_BOOKMARK
+                self.top_row, text="⭐", font=ctk.CTkFont(size=11), text_color=COLOR_BOOKMARK
             )
             self.bm_star.pack(side="left", padx=(0, 4))
 
@@ -151,7 +162,7 @@ class QuestionCard(ctk.CTkFrame):
             self.top_row,
             text=f"📅 {created_str}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         self.date_label.pack(side="right")
 
@@ -164,7 +175,7 @@ class QuestionCard(ctk.CTkFrame):
             text_color=COLOR_TEXT_PRIMARY,
             justify="left",
             anchor="w",
-            wraplength=420
+            wraplength=420,
         )
         self.title_label.pack(fill="x", padx=14, pady=(2, 4))
 
@@ -178,7 +189,7 @@ class QuestionCard(ctk.CTkFrame):
                 text_color=COLOR_TEXT_SECONDARY,
                 justify="left",
                 anchor="w",
-                wraplength=420
+                wraplength=420,
             )
             self.preview_label.pack(fill="x", padx=14, pady=(0, 6))
 
@@ -197,7 +208,7 @@ class QuestionCard(ctk.CTkFrame):
                 font=ctk.CTkFont(family=FONT_FAMILY, size=10, weight="bold"),
                 fg_color=COLOR_BG_TAG,
                 text_color=COLOR_TEXT_TAG,
-                corner_radius=4
+                corner_radius=4,
             )
             t_label.pack(side="left", padx=(0, 5))
 
@@ -206,7 +217,7 @@ class QuestionCard(ctk.CTkFrame):
             self.bottom_row,
             text=f"👤 {author[:18]}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         self.author_label.pack(side="right")
 
@@ -238,17 +249,9 @@ class QuestionCard(ctk.CTkFrame):
         """Highlight card with active SO accent border and selected surface."""
         self.is_selected = selected
         if selected:
-            self.configure(
-                fg_color=self.active_bg,
-                border_color=SO_ORANGE,
-                border_width=2
-            )
+            self.configure(fg_color=self.active_bg, border_color=SO_ORANGE, border_width=2)
         else:
-            self.configure(
-                fg_color=self.normal_bg,
-                border_color=self.border_color,
-                border_width=1
-            )
+            self.configure(fg_color=self.normal_bg, border_color=self.border_color, border_width=1)
 
     def on_card_click(self, event=None):
         if self.on_click_callback:

@@ -3,13 +3,26 @@ Header Bar Component with Search Controls, Inline Clear, Quick Topic Chips,
 Language Switcher, Sorting, and Appearance Mode Selector.
 """
 
-from typing import Callable, Optional
+from typing import Callable
+
 import customtkinter as ctk
+
 from src.ui.theme import (
-    SO_ORANGE, SO_ORANGE_HOVER,
-    COLOR_BG_SIDEBAR, COLOR_BG_CARD, COLOR_BG_CARD_HOVER, COLOR_BG_CARD_ACTIVE,
-    COLOR_BG_INPUT, COLOR_BORDER, COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
-    COLOR_BG_TAG, COLOR_BG_TAG_HOVER, COLOR_TEXT_TAG, FONT_FAMILY
+    COLOR_BG_CARD,
+    COLOR_BG_CARD_ACTIVE,
+    COLOR_BG_CARD_HOVER,
+    COLOR_BG_INPUT,
+    COLOR_BG_SIDEBAR,
+    COLOR_BG_TAG,
+    COLOR_BG_TAG_HOVER,
+    COLOR_BORDER,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
+    COLOR_TEXT_TAG,
+    FONT_FAMILY,
+    SO_ORANGE,
+    SO_ORANGE_HOVER,
 )
 
 
@@ -26,7 +39,15 @@ class HeaderBar(ctk.CTkFrame):
     """
 
     POPULAR_TOPICS = [
-        "python", "javascript", "react", "fastapi", "asyncio", "pandas", "docker", "c++", "rust"
+        "python",
+        "javascript",
+        "react",
+        "fastapi",
+        "asyncio",
+        "pandas",
+        "docker",
+        "c++",
+        "rust",
     ]
 
     def __init__(
@@ -34,7 +55,7 @@ class HeaderBar(ctk.CTkFrame):
         master,
         on_search_callback: Callable[[str, str, str], None],
         on_theme_change_callback: Callable[[str], None],
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             master,
@@ -42,7 +63,7 @@ class HeaderBar(ctk.CTkFrame):
             border_color=COLOR_BORDER,
             border_width=1,
             corner_radius=0,
-            **kwargs
+            **kwargs,
         )
 
         self.on_search = on_search_callback
@@ -68,7 +89,7 @@ class HeaderBar(ctk.CTkFrame):
             text_color="#ffffff",
             corner_radius=6,
             width=50,
-            height=32
+            height=32,
         )
         logo_badge.pack(side="left", padx=(0, 8))
 
@@ -76,7 +97,7 @@ class HeaderBar(ctk.CTkFrame):
             logo_frame,
             text="Search Pro",
             font=ctk.CTkFont(family=FONT_FAMILY, size=15, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
         title_lbl.pack(side="left")
 
@@ -87,16 +108,13 @@ class HeaderBar(ctk.CTkFrame):
             border_color=COLOR_BORDER,
             border_width=1,
             corner_radius=8,
-            height=38
+            height=38,
         )
         self.entry_container.pack(side="left", fill="x", expand=True, padx=(0, 10))
         self.entry_container.pack_propagate(False)
 
         search_icon = ctk.CTkLabel(
-            self.entry_container,
-            text="🔍",
-            font=ctk.CTkFont(size=12),
-            text_color=COLOR_TEXT_MUTED
+            self.entry_container, text="🔍", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_MUTED
         )
         search_icon.pack(side="left", padx=(10, 4))
 
@@ -106,7 +124,7 @@ class HeaderBar(ctk.CTkFrame):
             font=ctk.CTkFont(family=FONT_FAMILY, size=13),
             fg_color="transparent",
             border_width=0,
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
         self.search_entry.pack(side="left", fill="both", expand=True, padx=(0, 4))
         self.search_entry.bind("<Return>", lambda e: self.trigger_search())
@@ -123,7 +141,7 @@ class HeaderBar(ctk.CTkFrame):
             fg_color="transparent",
             hover_color=COLOR_BG_CARD_HOVER,
             text_color=COLOR_TEXT_MUTED,
-            command=self.clear_search
+            command=self.clear_search,
         )
         # Initially unmapped until text is present
 
@@ -134,7 +152,7 @@ class HeaderBar(ctk.CTkFrame):
             font=ctk.CTkFont(family=FONT_FAMILY, size=10),
             fg_color=COLOR_BG_CARD,
             text_color=COLOR_TEXT_MUTED,
-            corner_radius=4
+            corner_radius=4,
         )
         self.shortcut_badge.pack(side="right", padx=(0, 8))
 
@@ -152,7 +170,7 @@ class HeaderBar(ctk.CTkFrame):
             dropdown_text_color=COLOR_TEXT_PRIMARY,
             corner_radius=8,
             width=120,
-            height=38
+            height=38,
         )
         self.lang_menu.set("🌐 Both")
         self.lang_menu.pack(side="left", padx=(0, 8))
@@ -171,7 +189,7 @@ class HeaderBar(ctk.CTkFrame):
             dropdown_text_color=COLOR_TEXT_PRIMARY,
             corner_radius=8,
             width=120,
-            height=38
+            height=38,
         )
         self.sort_menu.set("⭐ Relevance")
         self.sort_menu.pack(side="left", padx=(0, 10))
@@ -187,7 +205,7 @@ class HeaderBar(ctk.CTkFrame):
             corner_radius=8,
             width=90,
             height=38,
-            command=self.trigger_search
+            command=self.trigger_search,
         )
         self.search_btn.pack(side="left", padx=(0, 12))
 
@@ -205,7 +223,7 @@ class HeaderBar(ctk.CTkFrame):
             corner_radius=8,
             width=100,
             height=38,
-            command=self.on_theme_selected
+            command=self.on_theme_selected,
         )
         self.theme_menu.set("🌙 Dark")
         self.theme_menu.pack(side="right")
@@ -218,7 +236,7 @@ class HeaderBar(ctk.CTkFrame):
             self.topics_row,
             text="⚡ Quick Search:",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         lbl_quick.pack(side="left", padx=(0, 8))
 
@@ -233,7 +251,7 @@ class HeaderBar(ctk.CTkFrame):
                 fg_color=COLOR_BG_TAG,
                 hover_color=COLOR_BG_TAG_HOVER,
                 text_color=COLOR_TEXT_TAG,
-                command=lambda t=topic: self.quick_search(t)
+                command=lambda t=topic: self.quick_search(t),
             )
             btn.pack(side="left", padx=(0, 6))
 
@@ -270,15 +288,9 @@ class HeaderBar(ctk.CTkFrame):
         """Toggle search button busy/active state."""
         self.is_searching = is_searching
         if is_searching:
-            self.search_btn.configure(
-                text="⏳ Searching...",
-                state="disabled"
-            )
+            self.search_btn.configure(text="⏳ Searching...", state="disabled")
         else:
-            self.search_btn.configure(
-                text="Search",
-                state="normal"
-            )
+            self.search_btn.configure(text="Search", state="normal")
 
     def trigger_search(self):
         """Extract inputs and call search callback."""

@@ -6,17 +6,14 @@ right-click context menu, and mouse-wheel scroll forwarding.
 
 import sys
 import tkinter as tk
-from typing import Union, Tuple, Optional
+from typing import Optional, Tuple, Union
+
 import customtkinter as ctk
-from src.ui.theme import (
-    COLOR_BG_CARD, COLOR_TEXT_PRIMARY, FONT_FAMILY, resolve_color
-)
+
+from src.ui.theme import COLOR_BG_CARD, COLOR_TEXT_PRIMARY, FONT_FAMILY, resolve_color
 
 # Selection background colors for light and dark modes
-THEME_SELECTION_BG = {
-    "dark": "#3e4259",
-    "light": "#cbd5e1"
-}
+THEME_SELECTION_BG = {"dark": "#3e4259", "light": "#cbd5e1"}
 
 
 class SelectableLabel(tk.Text):
@@ -39,7 +36,7 @@ class SelectableLabel(tk.Text):
         padx: int = 0,
         pady: int = 0,
         justify: str = "left",
-        **kwargs
+        **kwargs,
     ):
         self.text_color_spec = text_color
         self.bg_color_spec = bg_color
@@ -65,7 +62,7 @@ class SelectableLabel(tk.Text):
         fg = resolve_color(self.text_color_spec, self.mode)
         select_bg = THEME_SELECTION_BG.get(self.mode, THEME_SELECTION_BG["dark"])
 
-        initial_lines = max(1, text.count('\n') + 1)
+        initial_lines = max(1, text.count("\n") + 1)
 
         super().__init__(
             master,
@@ -84,7 +81,7 @@ class SelectableLabel(tk.Text):
             height=initial_lines,
             spacing1=1,
             spacing3=1,
-            **kwargs
+            **kwargs,
         )
 
         self.insert("1.0", text)
@@ -209,11 +206,6 @@ class SelectableLabel(tk.Text):
         select_bg = THEME_SELECTION_BG.get(self.mode, THEME_SELECTION_BG["dark"])
 
         try:
-            self.configure(
-                bg=bg,
-                fg=fg,
-                selectbackground=select_bg,
-                selectforeground=fg
-            )
+            self.configure(bg=bg, fg=fg, selectbackground=select_bg, selectforeground=fg)
         except Exception:
             pass

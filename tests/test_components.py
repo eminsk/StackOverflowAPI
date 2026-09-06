@@ -1,19 +1,25 @@
-import sys
 import os
+import sys
 import unittest
+
 import customtkinter as ctk
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.api.stackoverflow import StackOverflowAPI
-from src.utils.highlighter import parse_html_to_blocks, html_to_markdown, CodeHighlighter, extract_text_preview
-from src.utils.bookmarks import BookmarkManager
-from src.ui.components.selectable_label import SelectableLabel
+from src.ui.app import StackOverflowApp
 from src.ui.components.code_block import CodeBlockWidget
+from src.ui.components.details_view import QuestionDetailsView
 from src.ui.components.question_card import QuestionCard
 from src.ui.components.rich_view import RichContentView
-from src.ui.components.details_view import QuestionDetailsView
-from src.ui.app import StackOverflowApp
+from src.ui.components.selectable_label import SelectableLabel
+from src.utils.bookmarks import BookmarkManager
+from src.utils.highlighter import (
+    CodeHighlighter,
+    extract_text_preview,
+    html_to_markdown,
+    parse_html_to_blocks,
+)
 
 
 class TestStackOverflow(unittest.TestCase):
@@ -26,10 +32,10 @@ class TestStackOverflow(unittest.TestCase):
 
     def test_html_parsing_and_inline_segments(self):
         sample_html = (
-            '<p>Use <code>requests.get()</code> with <strong>timeout=5</strong>. '
+            "<p>Use <code>requests.get()</code> with <strong>timeout=5</strong>. "
             'See <a href="https://example.com">here</a>.</p>'
             '<pre><code class="lang-python">x = 42</code></pre>'
-            '<blockquote>Important note</blockquote>'
+            "<blockquote>Important note</blockquote>"
         )
         blocks = parse_html_to_blocks(sample_html)
         self.assertEqual(len(blocks), 3)
@@ -84,7 +90,7 @@ class TestStackOverflow(unittest.TestCase):
             "title": "Bookmark Test Question",
             "score": 5,
             "owner": {"display_name": "Tester"},
-            "creation_date": 1600000000
+            "creation_date": 1600000000,
         }
         # Clean state
         bm.remove_bookmark(999888)
@@ -111,7 +117,7 @@ class TestStackOverflow(unittest.TestCase):
             "view_count": 1400,
             "tags": ["python", "asyncio"],
             "owner": {"display_name": "DevGuy", "reputation": 2500},
-            "body": "<p>Preview body text</p>"
+            "body": "<p>Preview body text</p>",
         }
         card = QuestionCard(root, question_data=sample_q, on_click_callback=lambda q_id, c: None)
         card.pack()
@@ -140,7 +146,7 @@ class TestStackOverflow(unittest.TestCase):
 
     def test_rich_content_view_selectable(self):
         root = ctk.CTk()
-        html = '<p>First paragraph with multiple words and <code>inline_code</code></p><pre><code>let y = 10;</code></pre><ul><li>Item 1</li><li>Item 2</li></ul>'
+        html = "<p>First paragraph with multiple words and <code>inline_code</code></p><pre><code>let y = 10;</code></pre><ul><li>Item 1</li><li>Item 2</li></ul>"
         rich = RichContentView(root, html_content=html)
         rich.pack(fill="x")
         root.update()
@@ -174,7 +180,7 @@ class TestStackOverflow(unittest.TestCase):
             "creation_date": 1600000000,
             "tags": ["python", "json"],
             "owner": {"display_name": "DevUser", "reputation": 1000},
-            "body": "<p>Here is my question description.</p><pre><code>x = 1</code></pre>"
+            "body": "<p>Here is my question description.</p><pre><code>x = 1</code></pre>",
         }
 
         sample_answers = [
@@ -184,7 +190,7 @@ class TestStackOverflow(unittest.TestCase):
                 "score": 25,
                 "creation_date": 1600001000,
                 "owner": {"display_name": "Expert", "reputation": 50000},
-                "body": "<p>Use this solution:</p><pre><code class=\"lang-python\">def solve():\n    return True</code></pre>"
+                "body": '<p>Use this solution:</p><pre><code class="lang-python">def solve():\n    return True</code></pre>',
             }
         ]
 

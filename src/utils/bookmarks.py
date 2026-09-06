@@ -4,12 +4,12 @@ Provides persistent offline bookmark storage for questions in JSON format.
 Thread-safe, robust error handling with automatic fallback to local directory.
 """
 
+import json
 import os
 import sys
-import json
-import time
 import threading
-from typing import Dict, Any, List, Optional, Callable
+import time
+from typing import Any, Callable, Dict, List, Optional
 
 
 class BookmarkManager:

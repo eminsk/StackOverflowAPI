@@ -4,15 +4,24 @@ Code Block Widget with Syntax Highlighting, Word Wrap Toggle, Line Counters, and
 
 import sys
 import tkinter as tk
+
 import customtkinter as ctk
-from src.utils.highlighter import CodeHighlighter, THEME_COLORS
+
 from src.ui.theme import (
-    FONT_FAMILY_MONO, FONT_FAMILY, COLOR_SUCCESS,
-    COLOR_BG_CODE, COLOR_BG_CODE_HEADER, COLOR_BORDER,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
-    COLOR_BG_CARD, COLOR_BG_CARD_HOVER, COLOR_BG_CARD_ACTIVE,
-    resolve_color
+    COLOR_BG_CARD,
+    COLOR_BG_CARD_ACTIVE,
+    COLOR_BG_CARD_HOVER,
+    COLOR_BG_CODE,
+    COLOR_BG_CODE_HEADER,
+    COLOR_BORDER,
+    COLOR_SUCCESS,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
+    FONT_FAMILY,
+    FONT_FAMILY_MONO,
 )
+from src.utils.highlighter import THEME_COLORS, CodeHighlighter
 
 
 class CodeBlockWidget(ctk.CTkFrame):
@@ -37,7 +46,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             border_color=COLOR_BORDER,
             border_width=1,
             corner_radius=8,
-            **kwargs
+            **kwargs,
         )
 
         self.code = code
@@ -51,15 +60,12 @@ class CodeBlockWidget(ctk.CTkFrame):
 
         # Tokenize code to get language name
         self.tokens, self.lang_name = CodeHighlighter.tokenize(code, language_hint)
-        total_lines = max(code.count('\n') + 1, 1)
+        total_lines = max(code.count("\n") + 1, 1)
         self.total_lines = total_lines
 
         # Header Bar
         self.header_frame = ctk.CTkFrame(
-            self,
-            fg_color=COLOR_BG_CODE_HEADER,
-            corner_radius=6,
-            height=34
+            self, fg_color=COLOR_BG_CODE_HEADER, corner_radius=6, height=34
         )
         self.header_frame.pack(fill="x", padx=2, pady=2)
         self.header_frame.pack_propagate(False)
@@ -72,7 +78,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             left_box,
             text=f"⚡ {self.lang_name}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
         self.lang_label.pack(side="left")
 
@@ -82,7 +88,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             left_box,
             text=f"• {lines_str}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=10),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         self.lines_label.pack(side="left", padx=(6, 0))
 
@@ -100,7 +106,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             fg_color=COLOR_BG_CARD,
             hover_color=COLOR_BG_CARD_HOVER,
             text_color=COLOR_TEXT_SECONDARY,
-            command=self.toggle_wrap
+            command=self.toggle_wrap,
         )
         self.wrap_btn.pack(side="left", padx=(0, 6))
 
@@ -114,7 +120,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             fg_color=COLOR_BG_CARD,
             hover_color=COLOR_BG_CARD_HOVER,
             text_color=COLOR_TEXT_PRIMARY,
-            command=self.copy_to_clipboard
+            command=self.copy_to_clipboard,
         )
         self.copy_btn.pack(side="left")
 
@@ -126,11 +132,7 @@ class CodeBlockWidget(ctk.CTkFrame):
         self.text_frame.pack(fill="x", expand=True, padx=6, pady=(4, 2))
 
         # Vertical scrollbar (CTkScrollbar)
-        self.v_scroll = ctk.CTkScrollbar(
-            self.text_frame,
-            orientation="vertical",
-            width=12
-        )
+        self.v_scroll = ctk.CTkScrollbar(self.text_frame, orientation="vertical", width=12)
 
         # Tkinter Text widget
         self.text_widget = tk.Text(
@@ -149,21 +151,17 @@ class CodeBlockWidget(ctk.CTkFrame):
             relief="flat",
             cursor="xterm",
             spacing1=1,
-            spacing3=1
+            spacing3=1,
         )
 
         # Horizontal scrollbar (CTkScrollbar)
         self.h_scroll = ctk.CTkScrollbar(
-            self,
-            orientation="horizontal",
-            command=self.text_widget.xview,
-            height=12
+            self, orientation="horizontal", command=self.text_widget.xview, height=12
         )
 
         self.v_scroll.configure(command=self.text_widget.yview)
         self.text_widget.configure(
-            xscrollcommand=self.h_scroll.set,
-            yscrollcommand=self.v_scroll.set
+            xscrollcommand=self.h_scroll.set, yscrollcommand=self.v_scroll.set
         )
 
         # Pack vertical scrollbar if necessary
@@ -196,17 +194,13 @@ class CodeBlockWidget(ctk.CTkFrame):
             self.text_widget.configure(wrap="char")
             self.h_scroll.pack_forget()
             self.wrap_btn.configure(
-                text="↩ Unwrap",
-                fg_color=COLOR_BG_CARD_ACTIVE,
-                text_color=COLOR_TEXT_PRIMARY
+                text="↩ Unwrap", fg_color=COLOR_BG_CARD_ACTIVE, text_color=COLOR_TEXT_PRIMARY
             )
         else:
             self.text_widget.configure(wrap="none")
             self.h_scroll.pack(fill="x", padx=6, pady=(0, 6))
             self.wrap_btn.configure(
-                text="↩ Wrap",
-                fg_color=COLOR_BG_CARD,
-                text_color=COLOR_TEXT_SECONDARY
+                text="↩ Wrap", fg_color=COLOR_BG_CARD, text_color=COLOR_TEXT_SECONDARY
             )
         self.text_widget.configure(state="disabled")
 
@@ -333,7 +327,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             bg=theme_palette["bg"],
             fg=theme_palette["fg"],
             selectbackground=theme_palette["select_bg"],
-            selectforeground=theme_palette["fg"]
+            selectforeground=theme_palette["fg"],
         )
         self.render_highlighted_code()
 
@@ -344,11 +338,7 @@ class CodeBlockWidget(ctk.CTkFrame):
             self.clipboard_append(self.code)
             self.update()
 
-            self.copy_btn.configure(
-                text="✓ Copied!",
-                fg_color=COLOR_SUCCESS,
-                text_color="#ffffff"
-            )
+            self.copy_btn.configure(text="✓ Copied!", fg_color=COLOR_SUCCESS, text_color="#ffffff")
             self.after(1800, self.reset_copy_button)
         except Exception as e:
             print(f"Clipboard error: {e}")
@@ -357,9 +347,7 @@ class CodeBlockWidget(ctk.CTkFrame):
         """Reset copy button back to initial state."""
         try:
             self.copy_btn.configure(
-                text="📋 Copy Code",
-                fg_color=COLOR_BG_CARD,
-                text_color=COLOR_TEXT_PRIMARY
+                text="📋 Copy Code", fg_color=COLOR_BG_CARD, text_color=COLOR_TEXT_PRIMARY
             )
         except Exception:
             pass

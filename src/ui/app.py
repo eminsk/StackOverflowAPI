@@ -4,24 +4,31 @@ CustomTkinter-powered modern, responsive, ergonomic, and lightweight desktop cli
 """
 
 import os
-import sys
-import time
 import queue
 import threading
-from typing import Dict, Any, List, Optional
+import time
+from typing import Any, Dict, List, Optional
+
 import customtkinter as ctk
 
 from src.api.stackoverflow import StackOverflowAPI
-from src.utils.bookmarks import BookmarkManager
-from src.ui.theme import (
-    SO_ORANGE, SO_ORANGE_HOVER, COLOR_SUCCESS, COLOR_PRIMARY, COLOR_BOOKMARK,
-    COLOR_BG_SIDEBAR, COLOR_BG_CARD, COLOR_BG_CARD_ACTIVE, COLOR_BG_CARD_HOVER,
-    COLOR_BORDER, COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
-    FONT_FAMILY
-)
+from src.ui.components.details_view import QuestionDetailsView
 from src.ui.components.header import HeaderBar
 from src.ui.components.question_card import QuestionCard
-from src.ui.components.details_view import QuestionDetailsView
+from src.ui.theme import (
+    COLOR_BG_CARD,
+    COLOR_BG_CARD_HOVER,
+    COLOR_BG_SIDEBAR,
+    COLOR_BOOKMARK,
+    COLOR_BORDER,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
+    FONT_FAMILY,
+    SO_ORANGE,
+    SO_ORANGE_HOVER,
+)
+from src.utils.bookmarks import BookmarkManager
 
 
 class StackOverflowApp(ctk.CTk):
@@ -129,6 +136,7 @@ class StackOverflowApp(ctk.CTk):
                 self.iconbitmap("icon.ico")
             elif os.path.exists("icon.png"):
                 from PIL import Image, ImageTk
+
                 img = Image.open("icon.png")
                 photo = ImageTk.PhotoImage(img)
                 self.wm_iconphoto(True, photo)
@@ -162,7 +170,9 @@ class StackOverflowApp(ctk.CTk):
     def toggle_current_bookmark(self):
         """Toggle bookmark on currently open question via shortcut."""
         if self.selected_question_id and self.details_view.current_question:
-            self.details_view.toggle_bookmark(self.details_view.current_question, self.selected_language)
+            self.details_view.toggle_bookmark(
+                self.details_view.current_question, self.selected_language
+            )
 
     def reload_current_question(self):
         """Reload currently selected question and its answers."""
@@ -175,7 +185,7 @@ class StackOverflowApp(ctk.CTk):
         self.header = HeaderBar(
             self,
             on_search_callback=self.on_search_requested,
-            on_theme_change_callback=self.on_theme_changed
+            on_theme_change_callback=self.on_theme_changed,
         )
         self.header.pack(fill="x", side="top")
 
@@ -188,11 +198,7 @@ class StackOverflowApp(ctk.CTk):
         self.main_container.grid_rowconfigure(0, weight=1)
 
         # --- LEFT PANEL: Results List ---
-        self.left_panel = ctk.CTkFrame(
-            self.main_container,
-            fg_color="transparent",
-            width=500
-        )
+        self.left_panel = ctk.CTkFrame(self.main_container, fg_color="transparent", width=500)
         self.left_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 6), pady=0)
         self.left_panel.grid_propagate(False)
 
@@ -208,7 +214,7 @@ class StackOverflowApp(ctk.CTk):
             border_color=COLOR_BORDER,
             border_width=1,
             corner_radius=6,
-            height=28
+            height=28,
         )
         self.filter_entry.pack(fill="x", side="left", expand=True)
         self.filter_entry.bind("<KeyRelease>", self.on_filter_changed)
@@ -223,7 +229,7 @@ class StackOverflowApp(ctk.CTk):
             segmented_button_unselected_color=COLOR_BG_CARD,
             segmented_button_unselected_hover_color=COLOR_BG_SIDEBAR,
             text_color=COLOR_TEXT_PRIMARY,
-            corner_radius=10
+            corner_radius=10,
         )
         self.tabs.pack(fill="both", expand=True)
 
@@ -251,7 +257,7 @@ class StackOverflowApp(ctk.CTk):
         self.details_view = QuestionDetailsView(
             self.main_container,
             on_fetch_comments_callback=self.fetch_comments_async,
-            corner_radius=10
+            corner_radius=10,
         )
         self.details_view.grid(row=0, column=1, sticky="nsew", padx=(6, 0), pady=0)
 
@@ -262,7 +268,7 @@ class StackOverflowApp(ctk.CTk):
             fg_color=COLOR_BG_SIDEBAR,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=0
+            corner_radius=0,
         )
         self.status_bar.pack(fill="x", side="bottom")
         self.status_bar.pack_propagate(False)
@@ -271,7 +277,7 @@ class StackOverflowApp(ctk.CTk):
             self.status_bar,
             text="Ready to search Stack Overflow",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-            text_color=COLOR_TEXT_SECONDARY
+            text_color=COLOR_TEXT_SECONDARY,
         )
         self.status_label.pack(side="left", padx=14)
 
@@ -279,14 +285,17 @@ class StackOverflowApp(ctk.CTk):
             self.status_bar,
             text="⚡ API Quota: Active | 🟢 Connected | v2.1",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         self.status_right.pack(side="right", padx=14)
 
     def update_tab_label(self, tab_id: str, label_text: str):
         """Update tab text title safely."""
         try:
-            if hasattr(self.tabs, "_segmented_button") and tab_id in self.tabs._segmented_button._buttons_dict:
+            if (
+                hasattr(self.tabs, "_segmented_button")
+                and tab_id in self.tabs._segmented_button._buttons_dict
+            ):
                 self.tabs._segmented_button._buttons_dict[tab_id].configure(text=label_text)
         except Exception:
             pass
@@ -301,7 +310,7 @@ class StackOverflowApp(ctk.CTk):
             fg_color=COLOR_BG_CARD,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=10
+            corner_radius=10,
         )
         card.pack(fill="x", padx=10, pady=24)
 
@@ -313,12 +322,13 @@ class StackOverflowApp(ctk.CTk):
             text=f"No results yet for {lang_name}\nType a query above or click a quick search topic chip",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12),
             text_color=COLOR_TEXT_SECONDARY,
-            justify="center"
+            justify="center",
         )
         lbl_text.pack(pady=(0, 20))
 
     def update_status(self, message: str, is_error: bool = False):
         """Thread-safe status bar update with quota reporting."""
+
         def _update():
             color = "#ef4444" if is_error else COLOR_TEXT_SECONDARY
             self.status_label.configure(text=message, text_color=color)
@@ -328,6 +338,7 @@ class StackOverflowApp(ctk.CTk):
                 self.status_right.configure(
                     text=f"⚡ API Quota: {self.api.last_quota_remaining}{max_str} | 🟢 Connected | v2.1"
                 )
+
         self.run_on_ui_thread(_update)
 
     def on_theme_changed(self, mode: str):
@@ -367,9 +378,7 @@ class StackOverflowApp(ctk.CTk):
         for lang in targets:
             self.current_page[lang] = 1
             thread = threading.Thread(
-                target=self._search_worker,
-                args=(query, lang, sort, 1, start_time),
-                daemon=True
+                target=self._search_worker, args=(query, lang, sort, 1, start_time), daemon=True
             )
             thread.start()
 
@@ -380,7 +389,7 @@ class StackOverflowApp(ctk.CTk):
             fg_color=COLOR_BG_CARD,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=10
+            corner_radius=10,
         )
         card.pack(fill="x", padx=10, pady=24)
 
@@ -388,17 +397,23 @@ class StackOverflowApp(ctk.CTk):
             card,
             text=f"⏳ Fetching {lang} questions...",
             font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
-            text_color=SO_ORANGE
+            text_color=SO_ORANGE,
         )
         lbl.pack(pady=22)
 
     def _search_worker(self, query: str, language: str, sort: str, page: int, start_time: float):
         """Worker running in background thread for search."""
-        response = self.api.search_questions(query, language=language, sort=sort, page=page, pagesize=25)
+        response = self.api.search_questions(
+            query, language=language, sort=sort, page=page, pagesize=25
+        )
         elapsed = time.time() - start_time
-        self.run_on_ui_thread(self._handle_search_response, response, language, query, elapsed, page)
+        self.run_on_ui_thread(
+            self._handle_search_response, response, language, query, elapsed, page
+        )
 
-    def _handle_search_response(self, response: Dict[str, Any], language: str, query: str, elapsed: float, page: int):
+    def _handle_search_response(
+        self, response: Dict[str, Any], language: str, query: str, elapsed: float, page: int
+    ):
         """Handle search API response on main thread."""
         self.pending_searches = max(0, self.pending_searches - 1)
         if self.pending_searches == 0:
@@ -439,7 +454,7 @@ class StackOverflowApp(ctk.CTk):
             card = QuestionCard(
                 scroll_frame,
                 question_data=q_data,
-                on_click_callback=lambda q_id, c, l=language: self.on_question_selected(q_id, l, c)
+                on_click_callback=lambda q_id, c, l=language: self.on_question_selected(q_id, l, c),
             )
             card.pack(fill="x", padx=6, pady=4)
 
@@ -449,7 +464,9 @@ class StackOverflowApp(ctk.CTk):
         if language == "English":
             self.tabs.set("🇬🇧 English")
 
-        self.update_status(f"✅ Found {len(items)} {language} results in {elapsed:.2f}s for '{query}'")
+        self.update_status(
+            f"✅ Found {len(items)} {language} results in {elapsed:.2f}s for '{query}'"
+        )
 
     def render_load_more_button(self, parent, language: str):
         """Append sleek Load More button at bottom of results list."""
@@ -467,7 +484,7 @@ class StackOverflowApp(ctk.CTk):
             border_color=COLOR_BORDER,
             border_width=1,
             text_color=COLOR_TEXT_PRIMARY,
-            command=lambda btn=btn_frame, l=language: self.load_more_results(l, btn)
+            command=lambda btn=btn_frame, l=language: self.load_more_results(l, btn),
         )
         load_more_btn.pack(fill="x")
 
@@ -485,7 +502,7 @@ class StackOverflowApp(ctk.CTk):
             scroll_frame,
             text="⏳ Loading more questions...",
             font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
-            text_color=SO_ORANGE
+            text_color=SO_ORANGE,
         )
         loading_lbl.pack(pady=8)
 
@@ -493,15 +510,23 @@ class StackOverflowApp(ctk.CTk):
         thread = threading.Thread(
             target=self._load_more_worker,
             args=(self.current_query, language, self.current_sort, next_page, loading_lbl),
-            daemon=True
+            daemon=True,
         )
         thread.start()
 
-    def _load_more_worker(self, query: str, language: str, sort: str, page: int, loading_lbl: ctk.CTkLabel):
-        response = self.api.search_questions(query, language=language, sort=sort, page=page, pagesize=25)
-        self.run_on_ui_thread(self._handle_load_more_response, response, language, page, loading_lbl)
+    def _load_more_worker(
+        self, query: str, language: str, sort: str, page: int, loading_lbl: ctk.CTkLabel
+    ):
+        response = self.api.search_questions(
+            query, language=language, sort=sort, page=page, pagesize=25
+        )
+        self.run_on_ui_thread(
+            self._handle_load_more_response, response, language, page, loading_lbl
+        )
 
-    def _handle_load_more_response(self, response: Dict[str, Any], language: str, page: int, loading_lbl: ctk.CTkLabel):
+    def _handle_load_more_response(
+        self, response: Dict[str, Any], language: str, page: int, loading_lbl: ctk.CTkLabel
+    ):
         self.is_loading_more[language] = False
         try:
             loading_lbl.destroy()
@@ -530,7 +555,7 @@ class StackOverflowApp(ctk.CTk):
             card = QuestionCard(
                 scroll_frame,
                 question_data=q_data,
-                on_click_callback=lambda q_id, c, l=language: self.on_question_selected(q_id, l, c)
+                on_click_callback=lambda q_id, c, l=language: self.on_question_selected(q_id, l, c),
             )
             card.pack(fill="x", padx=6, pady=4)
 
@@ -545,7 +570,7 @@ class StackOverflowApp(ctk.CTk):
             fg_color=COLOR_BG_CARD,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=10
+            corner_radius=10,
         )
         card.pack(fill="x", padx=10, pady=24)
 
@@ -557,17 +582,13 @@ class StackOverflowApp(ctk.CTk):
             text=f"No results found for:\n'{query}'\nin {lang} Stack Overflow",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12),
             text_color=COLOR_TEXT_SECONDARY,
-            justify="center"
+            justify="center",
         )
         lbl_text.pack(pady=(0, 18))
 
     def show_error_in_list(self, parent, error: str):
         card = ctk.CTkFrame(
-            parent,
-            fg_color=COLOR_BG_CARD,
-            border_color="#ef4444",
-            border_width=1,
-            corner_radius=10
+            parent, fg_color=COLOR_BG_CARD, border_color="#ef4444", border_width=1, corner_radius=10
         )
         card.pack(fill="x", padx=10, pady=24)
 
@@ -576,7 +597,7 @@ class StackOverflowApp(ctk.CTk):
             text=f"⚠️ {error}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12),
             text_color="#ef4444",
-            wraplength=400
+            wraplength=400,
         )
         lbl.pack(pady=18, padx=14)
 
@@ -602,7 +623,9 @@ class StackOverflowApp(ctk.CTk):
                 else:
                     child.pack_forget()
 
-    def on_question_selected(self, question_id: int, language: str, card_widget: Optional[QuestionCard] = None):
+    def on_question_selected(
+        self, question_id: int, language: str, card_widget: Optional[QuestionCard] = None
+    ):
         """Handle selection of a question card with active visual highlight."""
         if self.active_card_widget and self.active_card_widget != card_widget:
             try:
@@ -637,9 +660,7 @@ class StackOverflowApp(ctk.CTk):
             self.update_status(f"Loaded question #{question_id} (from cache)")
         else:
             thread = threading.Thread(
-                target=self._answers_worker,
-                args=(question_id, language),
-                daemon=True
+                target=self._answers_worker, args=(question_id, language), daemon=True
             )
             thread.start()
 
@@ -664,9 +685,7 @@ class StackOverflowApp(ctk.CTk):
         """Asynchronously load comments for question or answer."""
         self.update_status(f"Loading comments for {item_type} #{item_id}...")
         thread = threading.Thread(
-            target=self._comments_worker,
-            args=(item_id, language, item_type),
-            daemon=True
+            target=self._comments_worker, args=(item_id, language, item_type), daemon=True
         )
         thread.start()
 
@@ -677,9 +696,13 @@ class StackOverflowApp(ctk.CTk):
             response = self.api.get_answer_comments(item_id, language=language)
 
         comments = response.get("items", [])
-        self.run_on_ui_thread(self._handle_comments_response, comments, item_id, language, item_type)
+        self.run_on_ui_thread(
+            self._handle_comments_response, comments, item_id, language, item_type
+        )
 
-    def _handle_comments_response(self, comments: List[Dict[str, Any]], item_id: int, language: str, item_type: str):
+    def _handle_comments_response(
+        self, comments: List[Dict[str, Any]], item_id: int, language: str, item_type: str
+    ):
         self.details_view.set_comments(item_id, language, item_type, comments)
         self.update_status(f"Loaded {len(comments)} comments for {item_type} #{item_id}")
 
@@ -701,11 +724,13 @@ class StackOverflowApp(ctk.CTk):
                 fg_color=COLOR_BG_CARD,
                 border_color=COLOR_BORDER,
                 border_width=1,
-                corner_radius=10
+                corner_radius=10,
             )
             card.pack(fill="x", padx=10, pady=24)
 
-            lbl_icon = ctk.CTkLabel(card, text="⭐", font=ctk.CTkFont(size=30), text_color=COLOR_BOOKMARK)
+            lbl_icon = ctk.CTkLabel(
+                card, text="⭐", font=ctk.CTkFont(size=30), text_color=COLOR_BOOKMARK
+            )
             lbl_icon.pack(pady=(18, 4))
 
             lbl_text = ctk.CTkLabel(
@@ -713,7 +738,7 @@ class StackOverflowApp(ctk.CTk):
                 text="No bookmarked questions yet.\nClick '☆ Save' on any question to bookmark it for offline reference.",
                 font=ctk.CTkFont(family=FONT_FAMILY, size=12),
                 text_color=COLOR_TEXT_SECONDARY,
-                justify="center"
+                justify="center",
             )
             lbl_text.pack(pady=(0, 18))
             return
@@ -723,6 +748,6 @@ class StackOverflowApp(ctk.CTk):
             card = QuestionCard(
                 self.list_bm,
                 question_data=bm,
-                on_click_callback=lambda q_id, c, l=bm_lang: self.on_question_selected(q_id, l, c)
+                on_click_callback=lambda q_id, c, l=bm_lang: self.on_question_selected(q_id, l, c),
             )
             card.pack(fill="x", padx=6, pady=4)

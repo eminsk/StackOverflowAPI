@@ -5,8 +5,6 @@ CustomTkinter uses tuples (light_mode_color, dark_mode_color) for automatic them
 """
 
 from typing import Tuple, Union
-import tkinter.font as tkfont
-
 
 # Brand Colors (Light, Dark)
 SO_ORANGE = "#F48024"
@@ -15,7 +13,7 @@ SO_ORANGE_LIGHT = "#FF8F3D"
 SO_ORANGE_BG = ("#FFF2E8", "#2E1B0D")
 
 # Status & Badge Colors
-COLOR_SUCCESS = "#10B981"               # Emerald Green
+COLOR_SUCCESS = "#10B981"  # Emerald Green
 COLOR_SUCCESS_HOVER = "#059669"
 COLOR_SUCCESS_BG = ("#D1FAE5", "#064E3B")
 COLOR_SUCCESS_FG = "#ffffff"
@@ -29,7 +27,7 @@ COLOR_DANGER = "#ef4444"
 COLOR_DANGER_BG = ("#fee2e2", "#450a0a")
 
 # Bookmark / Favorite Accents
-COLOR_BOOKMARK = "#eab308"              # Gold Star
+COLOR_BOOKMARK = "#eab308"  # Gold Star
 COLOR_BOOKMARK_HOVER = "#ca8a04"
 COLOR_BOOKMARK_BG = ("#fef9c3", "#3d3209")
 
@@ -39,36 +37,36 @@ COLOR_ACCEPTED_BANNER_BORDER = ("#10b981", "#059669")
 COLOR_ACCEPTED_BANNER_TEXT = ("#065f46", "#6ee7b7")
 
 # CustomTkinter Dual-Mode Color Tuples: (Light Mode, Dark Mode)
-COLOR_BG_WINDOW = ("#f4f6f9", "#0f111a")        # Deep clean app background
-COLOR_BG_SIDEBAR = ("#ffffff", "#161824")       # Left results panel & top bar
-COLOR_BG_CARD = ("#ffffff", "#1d1f2e")          # Card surface background
-COLOR_BG_CARD_HOVER = ("#f8fafc", "#25283c")    # Card hover background
-COLOR_BG_CARD_ACTIVE = ("#eef2f6", "#2d3047")   # Selected card background
-COLOR_BG_INPUT = ("#f8fafc", "#141620")         # Text input bg
-COLOR_BG_CODE = ("#f8fafc", "#141620")          # Code block background
-COLOR_BG_CODE_HEADER = ("#edf2f7", "#1e2130")   # Code header bar
-COLOR_BG_BLOCKQUOTE = ("#f1f5f9", "#1b1d2b")    # Blockquote background
+COLOR_BG_WINDOW = ("#f4f6f9", "#0f111a")  # Deep clean app background
+COLOR_BG_SIDEBAR = ("#ffffff", "#161824")  # Left results panel & top bar
+COLOR_BG_CARD = ("#ffffff", "#1d1f2e")  # Card surface background
+COLOR_BG_CARD_HOVER = ("#f8fafc", "#25283c")  # Card hover background
+COLOR_BG_CARD_ACTIVE = ("#eef2f6", "#2d3047")  # Selected card background
+COLOR_BG_INPUT = ("#f8fafc", "#141620")  # Text input bg
+COLOR_BG_CODE = ("#f8fafc", "#141620")  # Code block background
+COLOR_BG_CODE_HEADER = ("#edf2f7", "#1e2130")  # Code header bar
+COLOR_BG_BLOCKQUOTE = ("#f1f5f9", "#1b1d2b")  # Blockquote background
 
 # Tag Chips
-COLOR_BG_TAG = ("#e0f2fe", "#1e293b")           # Tag chip background
-COLOR_BG_TAG_HOVER = ("#bae6fd", "#2c3e55")     # Tag chip hover
-COLOR_BORDER_TAG = ("#bae6fd", "#334155")       # Tag chip border
-COLOR_TEXT_TAG = ("#0284c7", "#7dd3fc")         # Tag text
+COLOR_BG_TAG = ("#e0f2fe", "#1e293b")  # Tag chip background
+COLOR_BG_TAG_HOVER = ("#bae6fd", "#2c3e55")  # Tag chip hover
+COLOR_BORDER_TAG = ("#bae6fd", "#334155")  # Tag chip border
+COLOR_TEXT_TAG = ("#0284c7", "#7dd3fc")  # Tag text
 
 # Borders
-COLOR_BORDER = ("#d8e1ea", "#2b2e42")           # Standard border
-COLOR_BORDER_FOCUS = (SO_ORANGE, SO_ORANGE)     # Active focus border
-COLOR_BORDER_ACCEPTED = (COLOR_SUCCESS, COLOR_SUCCESS) # Accepted solution border
+COLOR_BORDER = ("#d8e1ea", "#2b2e42")  # Standard border
+COLOR_BORDER_FOCUS = (SO_ORANGE, SO_ORANGE)  # Active focus border
+COLOR_BORDER_ACCEPTED = (COLOR_SUCCESS, COLOR_SUCCESS)  # Accepted solution border
 
 # Typography & Text Colors
-COLOR_TEXT_PRIMARY = ("#0f172a", "#f8fafc")     # Main headings & primary text
-COLOR_TEXT_SECONDARY = ("#334155", "#cbd5e1")   # Subheadings & readable meta
-COLOR_TEXT_MUTED = ("#64748b", "#94a3b8")       # Dim timestamps, hints, icons
-COLOR_TEXT_LINK = ("#0284c7", "#38bdf8")        # Clickable links
+COLOR_TEXT_PRIMARY = ("#0f172a", "#f8fafc")  # Main headings & primary text
+COLOR_TEXT_SECONDARY = ("#334155", "#cbd5e1")  # Subheadings & readable meta
+COLOR_TEXT_MUTED = ("#64748b", "#94a3b8")  # Dim timestamps, hints, icons
+COLOR_TEXT_LINK = ("#0284c7", "#38bdf8")  # Clickable links
 
 # Inline Code Styling
 COLOR_INLINE_CODE_BG = ("#e2e8f0", "#282a3c")
-COLOR_INLINE_CODE_FG = ("#c026d3", "#f472b6")   # Purple/pink distinctive code accent
+COLOR_INLINE_CODE_FG = ("#c026d3", "#f472b6")  # Purple/pink distinctive code accent
 
 # Typography Font Names
 FONT_FAMILY = "Segoe UI"

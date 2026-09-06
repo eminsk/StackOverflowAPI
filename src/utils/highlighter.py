@@ -6,14 +6,14 @@ Converts Stack Overflow HTML responses into structured UI blocks with rich inlin
 
 import html
 import re
-from typing import List, Tuple, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 from bs4 import BeautifulSoup, NavigableString, Tag
 from pygments import lex
-from pygments.lexers import get_lexer_by_name, guess_lexer, TextLexer
+from pygments.lexers import TextLexer, get_lexer_by_name, guess_lexer
 from pygments.token import (
-    Token, Keyword, Name, Comment, String, Number, Operator, Punctuation, Generic
+    Token,
 )
-
 
 # Syntax Highlight Colors for Dark & Light themes (VS Code / Catppuccin & GitHub Light styled)
 THEME_COLORS = {
@@ -21,58 +21,58 @@ THEME_COLORS = {
         "bg": "#141620",
         "fg": "#cdd6f4",
         "select_bg": "#3e4259",
-        "Keyword": "#cba6f7",          # Mauve / Purple
-        "Keyword.Constant": "#fab387",   # Peach
-        "Keyword.Type": "#f9e2af",       # Yellow
-        "Name": "#cdd6f4",             # Clean light text
-        "Name.Function": "#89b4fa",    # Sky Blue
-        "Name.Class": "#f9e2af",       # Yellow
-        "Name.Builtin": "#89dceb",     # Cyan
-        "Name.Tag": "#f38ba8",         # Coral Red
-        "Name.Attribute": "#a6e3a1",   # Green
-        "String": "#a6e3a1",           # Emerald Green
-        "String.Doc": "#7f849c",       # Muted Slate
-        "Number": "#fab387",           # Peach / Orange
-        "Comment": "#7f849c",          # Muted Slate
+        "Keyword": "#cba6f7",  # Mauve / Purple
+        "Keyword.Constant": "#fab387",  # Peach
+        "Keyword.Type": "#f9e2af",  # Yellow
+        "Name": "#cdd6f4",  # Clean light text
+        "Name.Function": "#89b4fa",  # Sky Blue
+        "Name.Class": "#f9e2af",  # Yellow
+        "Name.Builtin": "#89dceb",  # Cyan
+        "Name.Tag": "#f38ba8",  # Coral Red
+        "Name.Attribute": "#a6e3a1",  # Green
+        "String": "#a6e3a1",  # Emerald Green
+        "String.Doc": "#7f849c",  # Muted Slate
+        "Number": "#fab387",  # Peach / Orange
+        "Comment": "#7f849c",  # Muted Slate
         "Comment.Single": "#7f849c",
         "Comment.Multiline": "#7f849c",
-        "Operator": "#89dceb",         # Cyan
-        "Punctuation": "#9399b2",      # Slate
+        "Operator": "#89dceb",  # Cyan
+        "Punctuation": "#9399b2",  # Slate
         "Generic.Heading": "#89b4fa",
         "Generic.Subheading": "#b4befe",
         "Generic.Deleted": "#f38ba8",
         "Generic.Inserted": "#a6e3a1",
         "Generic.Error": "#f38ba8",
-        "Default": "#cdd6f4"
+        "Default": "#cdd6f4",
     },
     "light": {
         "bg": "#f8fafc",
         "fg": "#1e293b",
         "select_bg": "#cbd5e1",
-        "Keyword": "#7c3aed",          # Violet
-        "Keyword.Constant": "#ea580c",   # Orange
-        "Keyword.Type": "#d97706",       # Amber
-        "Name": "#1e293b",             # Dark Slate
-        "Name.Function": "#2563eb",    # Royal Blue
-        "Name.Class": "#d97706",       # Amber
-        "Name.Builtin": "#0284c7",     # Sky Blue
-        "Name.Tag": "#dc2626",         # Red
-        "Name.Attribute": "#16a34a",   # Green
-        "String": "#16a34a",           # Emerald
-        "String.Doc": "#64748b",       # Muted Slate
-        "Number": "#ea580c",           # Orange
-        "Comment": "#64748b",          # Muted Slate
+        "Keyword": "#7c3aed",  # Violet
+        "Keyword.Constant": "#ea580c",  # Orange
+        "Keyword.Type": "#d97706",  # Amber
+        "Name": "#1e293b",  # Dark Slate
+        "Name.Function": "#2563eb",  # Royal Blue
+        "Name.Class": "#d97706",  # Amber
+        "Name.Builtin": "#0284c7",  # Sky Blue
+        "Name.Tag": "#dc2626",  # Red
+        "Name.Attribute": "#16a34a",  # Green
+        "String": "#16a34a",  # Emerald
+        "String.Doc": "#64748b",  # Muted Slate
+        "Number": "#ea580c",  # Orange
+        "Comment": "#64748b",  # Muted Slate
         "Comment.Single": "#64748b",
         "Comment.Multiline": "#64748b",
-        "Operator": "#0284c7",         # Sky Blue
-        "Punctuation": "#475569",      # Slate
+        "Operator": "#0284c7",  # Sky Blue
+        "Punctuation": "#475569",  # Slate
         "Generic.Heading": "#2563eb",
         "Generic.Subheading": "#4338ca",
         "Generic.Deleted": "#dc2626",
         "Generic.Inserted": "#16a34a",
         "Generic.Error": "#dc2626",
-        "Default": "#1e293b"
-    }
+        "Default": "#1e293b",
+    },
 }
 
 
@@ -117,7 +117,7 @@ class CodeHighlighter:
     def get_lexer(cls, code: str, lang_hint: Optional[str] = None):
         """Determine the best lexer for the given code and hint."""
         if lang_hint:
-            clean_hint = re.sub(r'^(lang-|language-|default-)', '', lang_hint.strip().lower())
+            clean_hint = re.sub(r"^(lang-|language-|default-)", "", lang_hint.strip().lower())
             clean_hint = cls.ALIAS_MAP.get(clean_hint, clean_hint)
             try:
                 return get_lexer_by_name(clean_hint), clean_hint.upper()
@@ -131,7 +131,9 @@ class CodeHighlighter:
             return TextLexer(), "CODE"
 
     @classmethod
-    def tokenize(cls, code: str, lang_hint: Optional[str] = None) -> Tuple[List[Tuple[str, str]], str]:
+    def tokenize(
+        cls, code: str, lang_hint: Optional[str] = None
+    ) -> Tuple[List[Tuple[str, str]], str]:
         """
         Tokenize code using Pygments.
         Returns (tokens_list, display_language_name).
@@ -160,10 +162,10 @@ class CodeHighlighter:
         if token_type in palette:
             return palette[token_type]
 
-        parts = token_type.split('.')
+        parts = token_type.split(".")
         while len(parts) > 1:
             parts.pop()
-            parent = '.'.join(parts)
+            parent = ".".join(parts)
             if parent in palette:
                 return palette[parent]
 
@@ -238,9 +240,9 @@ def extract_text_preview(html_content: str, max_chars: int = 130) -> str:
     if not html_content:
         return ""
     try:
-        soup = BeautifulSoup(html_content, 'html.parser')
+        soup = BeautifulSoup(html_content, "html.parser")
         # Remove code blocks so they don't clutter the card preview
-        for tag in soup.find_all(['pre', 'code']):
+        for tag in soup.find_all(["pre", "code"]):
             tag.decompose()
         text = soup.get_text()
         text = " ".join(text.split())
@@ -266,7 +268,7 @@ def parse_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
     if not html_content:
         return []
 
-    soup = BeautifulSoup(html_content, 'html.parser')
+    soup = BeautifulSoup(html_content, "html.parser")
     blocks = []
 
     for child in soup.children:
@@ -274,11 +276,13 @@ def parse_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
             raw = str(child).strip()
             if raw:
                 text_clean = html.unescape(raw)
-                blocks.append({
-                    "type": "paragraph",
-                    "text": text_clean,
-                    "segments": [(text_clean, "text", None)]
-                })
+                blocks.append(
+                    {
+                        "type": "paragraph",
+                        "text": text_clean,
+                        "segments": [(text_clean, "text", None)],
+                    }
+                )
             continue
 
         if not isinstance(child, Tag):
@@ -303,21 +307,19 @@ def parse_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
                     break
 
             raw_code = html.unescape(raw_code.rstrip())
-            blocks.append({
-                "type": "code",
-                "code": raw_code,
-                "language": lang_hint
-            })
+            blocks.append({"type": "code", "code": raw_code, "language": lang_hint})
 
         # 2. Blockquote
         elif tag_name == "blockquote":
             quote_text = clean_node_text(child).strip()
             if quote_text:
-                blocks.append({
-                    "type": "blockquote",
-                    "text": quote_text,
-                    "segments": extract_inline_segments(child)
-                })
+                blocks.append(
+                    {
+                        "type": "blockquote",
+                        "text": quote_text,
+                        "segments": extract_inline_segments(child),
+                    }
+                )
 
         # 3. Lists (<ul>, <ol>)
         elif tag_name in ("ul", "ol"):
@@ -329,24 +331,28 @@ def parse_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
                     items.append(li_text)
                     item_segments.append(extract_inline_segments(li))
             if items:
-                blocks.append({
-                    "type": "list",
-                    "ordered": tag_name == "ol",
-                    "items": items,
-                    "item_segments": item_segments
-                })
+                blocks.append(
+                    {
+                        "type": "list",
+                        "ordered": tag_name == "ol",
+                        "items": items,
+                        "item_segments": item_segments,
+                    }
+                )
 
         # 4. Headings (<h1>..<h6>)
         elif tag_name in ("h1", "h2", "h3", "h4", "h5", "h6"):
             h_text = clean_node_text(child).strip()
             if h_text:
                 level = int(tag_name[1])
-                blocks.append({
-                    "type": "heading",
-                    "level": level,
-                    "text": h_text,
-                    "segments": extract_inline_segments(child)
-                })
+                blocks.append(
+                    {
+                        "type": "heading",
+                        "level": level,
+                        "text": h_text,
+                        "segments": extract_inline_segments(child),
+                    }
+                )
 
         # 5. Horizontal rule (<hr>)
         elif tag_name == "hr":
@@ -360,27 +366,33 @@ def parse_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
                     if isinstance(sub, Tag) and sub.name == "pre":
                         c_tag = sub.find("code")
                         raw_c = c_tag.get_text() if c_tag else sub.get_text()
-                        blocks.append({
-                            "type": "code",
-                            "code": html.unescape(raw_c.rstrip()),
-                            "language": None
-                        })
+                        blocks.append(
+                            {
+                                "type": "code",
+                                "code": html.unescape(raw_c.rstrip()),
+                                "language": None,
+                            }
+                        )
                     else:
                         sub_text = clean_node_text(sub).strip()
                         if sub_text:
-                            blocks.append({
-                                "type": "paragraph",
-                                "text": sub_text,
-                                "segments": extract_inline_segments(sub)
-                            })
+                            blocks.append(
+                                {
+                                    "type": "paragraph",
+                                    "text": sub_text,
+                                    "segments": extract_inline_segments(sub),
+                                }
+                            )
             else:
                 p_text = clean_node_text(child).strip()
                 if p_text:
-                    blocks.append({
-                        "type": "paragraph",
-                        "text": p_text,
-                        "segments": extract_inline_segments(child)
-                    })
+                    blocks.append(
+                        {
+                            "type": "paragraph",
+                            "text": p_text,
+                            "segments": extract_inline_segments(child),
+                        }
+                    )
 
     return blocks
 
@@ -392,7 +404,7 @@ def html_to_markdown(html_content: str) -> str:
     """
     blocks = parse_html_to_blocks(html_content)
     if not blocks:
-        soup = BeautifulSoup(html_content or "", 'html.parser')
+        soup = BeautifulSoup(html_content or "", "html.parser")
         return soup.get_text().strip()
 
     md_parts = []
@@ -425,7 +437,7 @@ def html_to_markdown(html_content: str) -> str:
             code = b.get("code", "")
             lang = b.get("language") or ""
             if lang.startswith("lang-") or lang.startswith("language-"):
-                lang = re.sub(r'^(lang-|language-)', '', lang)
+                lang = re.sub(r"^(lang-|language-)", "", lang)
             md_parts.append(f"```{lang}\n{code}\n```\n")
         elif b_type == "blockquote":
             text = b.get("text", "")

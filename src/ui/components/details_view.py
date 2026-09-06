@@ -8,21 +8,33 @@ and sorted answers with accepted solution styling.
 import html
 import webbrowser
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
+
 import customtkinter as ctk
 
 from src.ui.components.rich_view import RichContentView
 from src.ui.components.selectable_label import SelectableLabel
-from src.utils.highlighter import html_to_markdown
-from src.utils.bookmarks import BookmarkManager
 from src.ui.theme import (
-    SO_ORANGE, COLOR_SUCCESS, COLOR_PRIMARY, COLOR_BOOKMARK, COLOR_BOOKMARK_HOVER,
-    COLOR_BG_WINDOW, COLOR_BG_CARD, COLOR_BG_CARD_HOVER, COLOR_BG_CARD_ACTIVE,
-    COLOR_BG_SIDEBAR, COLOR_BG_TAG, COLOR_BORDER, COLOR_BORDER_ACCEPTED,
-    COLOR_ACCEPTED_BANNER_BG, COLOR_ACCEPTED_BANNER_TEXT, COLOR_ACCEPTED_BANNER_BORDER,
-    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED, COLOR_TEXT_TAG,
-    FONT_FAMILY
+    COLOR_ACCEPTED_BANNER_BG,
+    COLOR_BG_CARD,
+    COLOR_BG_CARD_ACTIVE,
+    COLOR_BG_CARD_HOVER,
+    COLOR_BG_SIDEBAR,
+    COLOR_BG_TAG,
+    COLOR_BG_WINDOW,
+    COLOR_BOOKMARK,
+    COLOR_BOOKMARK_HOVER,
+    COLOR_BORDER,
+    COLOR_BORDER_ACCEPTED,
+    COLOR_SUCCESS,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
+    COLOR_TEXT_TAG,
+    FONT_FAMILY,
 )
+from src.utils.bookmarks import BookmarkManager
+from src.utils.highlighter import html_to_markdown
 
 
 class QuestionDetailsView(ctk.CTkScrollableFrame):
@@ -37,16 +49,9 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
     """
 
     def __init__(
-        self,
-        master,
-        on_fetch_comments_callback: Callable[[int, str, str], None],
-        **kwargs
+        self, master, on_fetch_comments_callback: Callable[[int, str, str], None], **kwargs
     ):
-        super().__init__(
-            master,
-            fg_color=COLOR_BG_WINDOW,
-            **kwargs
-        )
+        super().__init__(master, fg_color=COLOR_BG_WINDOW, **kwargs)
 
         self.on_fetch_comments = on_fetch_comments_callback
         self.bookmark_mgr = BookmarkManager()
@@ -73,33 +78,29 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=COLOR_BG_CARD,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=12
+            corner_radius=12,
         )
         welcome_card.pack(fill="x", padx=20, pady=40)
 
-        icon_lbl = ctk.CTkLabel(
-            welcome_card,
-            text="⚡",
-            font=ctk.CTkFont(size=44)
-        )
+        icon_lbl = ctk.CTkLabel(welcome_card, text="⚡", font=ctk.CTkFont(size=44))
         icon_lbl.pack(pady=(32, 10))
 
         title_lbl = ctk.CTkLabel(
             welcome_card,
             text="Stack Overflow Search Pro",
             font=ctk.CTkFont(family=FONT_FAMILY, size=20, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
         title_lbl.pack(pady=(0, 8))
 
         desc_lbl = ctk.CTkLabel(
             welcome_card,
             text="Search questions simultaneously across Stack Overflow (English) and Russian Stack Overflow.\n"
-                 "Select any question on the left to read full answers, copy code blocks with 1 click, and save bookmarks.\n\n"
-                 "💡 Tip: Use Ctrl+K to quickly focus the search bar from anywhere.",
+            "Select any question on the left to read full answers, copy code blocks with 1 click, and save bookmarks.\n\n"
+            "💡 Tip: Use Ctrl+K to quickly focus the search bar from anywhere.",
             font=ctk.CTkFont(family=FONT_FAMILY, size=13),
             text_color=COLOR_TEXT_SECONDARY,
-            justify="center"
+            justify="center",
         )
         desc_lbl.pack(pady=(0, 32))
 
@@ -113,7 +114,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=COLOR_BG_CARD,
             corner_radius=10,
             border_color=COLOR_BORDER,
-            border_width=1
+            border_width=1,
         )
         loading_frame.pack(fill="x", padx=20, pady=40)
 
@@ -121,7 +122,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             loading_frame,
             text=f"⏳ {message}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=14, weight="bold"),
-            text_color=COLOR_TEXT_SECONDARY
+            text_color=COLOR_TEXT_SECONDARY,
         )
         lbl.pack(pady=32)
 
@@ -142,7 +143,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=COLOR_BG_CARD,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=12
+            corner_radius=12,
         )
         q_card.pack(fill="x", padx=16, pady=(16, 12))
 
@@ -157,7 +158,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             text_color=COLOR_TEXT_PRIMARY,
             bg_color=COLOR_BG_CARD,
             padx=4,
-            pady=2
+            pady=2,
         )
         title_lbl.pack(fill="x", padx=18, pady=(18, 10))
 
@@ -168,7 +169,9 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         score = question.get("score", 0)
         view_count = question.get("view_count", 0)
         created_ts = question.get("creation_date", 0)
-        created_str = datetime.fromtimestamp(created_ts).strftime("%b %d, %Y %H:%M") if created_ts else ""
+        created_str = (
+            datetime.fromtimestamp(created_ts).strftime("%b %d, %Y %H:%M") if created_ts else ""
+        )
         owner = question.get("owner", {})
         author = owner.get("display_name", "Anonymous")
         rep = owner.get("reputation", 0)
@@ -176,12 +179,14 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         q_id = question.get("question_id", 0)
 
         # Score badge
-        score_color = COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else "#ef4444")
+        score_color = (
+            COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else "#ef4444")
+        )
         s_lbl = ctk.CTkLabel(
             meta_row1,
             text=f"▲ {score}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
-            text_color=score_color
+            text_color=score_color,
         )
         s_lbl.pack(side="left", padx=(0, 12))
 
@@ -190,7 +195,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             meta_row1,
             text=f"👁 {view_count:,} views",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         v_lbl.pack(side="left", padx=(0, 12))
 
@@ -199,7 +204,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             meta_row1,
             text=f"📅 {created_str}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         d_lbl.pack(side="left", padx=(0, 12))
 
@@ -208,7 +213,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             meta_row1,
             text=f"👤 {author} ({rep:,} rep)",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
-            text_color=COLOR_TEXT_SECONDARY
+            text_color=COLOR_TEXT_SECONDARY,
         )
         a_lbl.pack(side="left", padx=(0, 12))
 
@@ -232,7 +237,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=bm_fg,
             hover_color=COLOR_BOOKMARK_HOVER if is_bookmarked else COLOR_BG_CARD_HOVER,
             text_color=bm_txt_color,
-            command=lambda: self.toggle_bookmark(question, language)
+            command=lambda: self.toggle_bookmark(question, language),
         )
         self.bm_btn.pack(side="left", padx=(0, 8))
 
@@ -246,9 +251,11 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             corner_radius=6,
             fg_color=COLOR_BG_CARD_ACTIVE,
             hover_color=COLOR_BG_CARD_HOVER,
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
-        copy_q_btn.configure(command=lambda btn=copy_q_btn, q=question: self.copy_question_to_clipboard(q, btn))
+        copy_q_btn.configure(
+            command=lambda btn=copy_q_btn, q=question: self.copy_question_to_clipboard(q, btn)
+        )
         copy_q_btn.pack(side="left", padx=(0, 8))
 
         # Copy Link Button
@@ -263,7 +270,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 fg_color=COLOR_BG_CARD_ACTIVE,
                 hover_color=COLOR_BG_CARD_HOVER,
                 text_color=COLOR_TEXT_PRIMARY,
-                command=lambda btn=action_row, u=link: self.copy_link_to_clipboard(u)
+                command=lambda btn=action_row, u=link: self.copy_link_to_clipboard(u),
             )
             copy_link_btn.pack(side="left", padx=(0, 8))
 
@@ -278,7 +285,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 fg_color=COLOR_BG_CARD_ACTIVE,
                 hover_color=COLOR_BG_CARD_HOVER,
                 text_color=COLOR_TEXT_PRIMARY,
-                command=lambda: webbrowser.open(link)
+                command=lambda: webbrowser.open(link),
             )
             link_btn.pack(side="right")
 
@@ -295,7 +302,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                     font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
                     fg_color=COLOR_BG_TAG,
                     text_color=COLOR_TEXT_TAG,
-                    corner_radius=4
+                    corner_radius=4,
                 )
                 t_lbl.pack(side="left", padx=(0, 6))
 
@@ -305,12 +312,16 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
 
         # Question Body (Selectable Rich View with inline tags & code blocks)
         body_html = question.get("body", "<p>No body text</p>")
-        rich_body = RichContentView(q_card, html_content=body_html, wraplength=660, bg_color=COLOR_BG_CARD)
+        rich_body = RichContentView(
+            q_card, html_content=body_html, wraplength=660, bg_color=COLOR_BG_CARD
+        )
         rich_body.pack(fill="x", expand=True, padx=20, pady=(0, 14))
 
         # Question Comments Section
         comment_count = question.get("comment_count", 0)
-        self.render_comments_accordion(q_card, item_id=q_id, comment_count=comment_count, item_type="question")
+        self.render_comments_accordion(
+            q_card, item_id=q_id, comment_count=comment_count, item_type="question"
+        )
 
         # 2. Answers Container Frame
         self.answers_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -321,7 +332,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             self.answers_container,
             text="⏳ Loading answers...",
             font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         loading_ans_lbl.pack(pady=16)
 
@@ -333,14 +344,14 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 text="★ Saved",
                 fg_color=COLOR_BOOKMARK,
                 hover_color=COLOR_BOOKMARK_HOVER,
-                text_color="#ffffff"
+                text_color="#ffffff",
             )
         else:
             self.bm_btn.configure(
                 text="☆ Save",
                 fg_color=COLOR_BG_CARD_ACTIVE,
                 hover_color=COLOR_BG_CARD_HOVER,
-                text_color=COLOR_TEXT_PRIMARY
+                text_color=COLOR_TEXT_PRIMARY,
             )
 
     def copy_link_to_clipboard(self, url: str):
@@ -365,7 +376,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 fg_color=COLOR_BG_CARD,
                 border_color=COLOR_BORDER,
                 border_width=1,
-                corner_radius=10
+                corner_radius=10,
             )
             no_ans_card.pack(fill="x", pady=8)
 
@@ -373,7 +384,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 no_ans_card,
                 text="💭 No answers available for this question yet.",
                 font=ctk.CTkFont(family=FONT_FAMILY, size=13),
-                text_color=COLOR_TEXT_MUTED
+                text_color=COLOR_TEXT_MUTED,
             )
             lbl.pack(pady=20)
             return
@@ -386,7 +397,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             hdr_frame,
             text=f"💡 Answers ({len(answers_list)})",
             font=ctk.CTkFont(family=FONT_FAMILY, size=16, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
         ans_count_lbl.pack(side="left")
 
@@ -394,7 +405,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         sorted_answers = sorted(
             answers_list,
             key=lambda a: (1 if a.get("is_accepted") else 0, a.get("score", 0)),
-            reverse=True
+            reverse=True,
         )
 
         # Render each answer
@@ -409,7 +420,9 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         author = owner.get("display_name", "Anonymous")
         rep = owner.get("reputation", 0)
         created_ts = ans_data.get("creation_date", 0)
-        created_str = datetime.fromtimestamp(created_ts).strftime("%b %d, %Y %H:%M") if created_ts else ""
+        created_str = (
+            datetime.fromtimestamp(created_ts).strftime("%b %d, %Y %H:%M") if created_ts else ""
+        )
         ans_id = ans_data.get("answer_id", 0)
         comment_count = ans_data.get("comment_count", 0)
 
@@ -421,17 +434,14 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=COLOR_BG_CARD,
             border_color=border_color,
             border_width=border_width,
-            corner_radius=12
+            corner_radius=12,
         )
         card.pack(fill="x", pady=8)
 
         # Top Accepted Solution Banner
         if is_accepted:
             banner = ctk.CTkFrame(
-                card,
-                fg_color=COLOR_ACCEPTED_BANNER_BG,
-                corner_radius=8,
-                height=34
+                card, fg_color=COLOR_ACCEPTED_BANNER_BG, corner_radius=8, height=34
             )
             banner.pack(fill="x", padx=12, pady=(12, 4))
             banner.pack_propagate(False)
@@ -440,7 +450,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 banner,
                 text="✓ ACCEPTED SOLUTION",
                 font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
-                text_color=COLOR_SUCCESS
+                text_color=COLOR_SUCCESS,
             )
             b_icon.pack(side="left", padx=12)
 
@@ -448,7 +458,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 banner,
                 text="• Verified and accepted by the question author",
                 font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-                text_color=COLOR_TEXT_SECONDARY
+                text_color=COLOR_TEXT_SECONDARY,
             )
             b_desc.pack(side="left")
 
@@ -461,17 +471,19 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             hdr,
             text=f"Answer #{index}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
         num_lbl.pack(side="left", padx=(0, 12))
 
         # Score
-        score_color = COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else "#ef4444")
+        score_color = (
+            COLOR_SUCCESS if score > 0 else (COLOR_TEXT_MUTED if score == 0 else "#ef4444")
+        )
         s_lbl = ctk.CTkLabel(
             hdr,
             text=f"▲ {score}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
-            text_color=score_color
+            text_color=score_color,
         )
         s_lbl.pack(side="left", padx=(0, 12))
 
@@ -485,9 +497,11 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             corner_radius=6,
             fg_color=COLOR_BG_CARD_ACTIVE,
             hover_color=COLOR_BG_CARD_HOVER,
-            text_color=COLOR_TEXT_PRIMARY
+            text_color=COLOR_TEXT_PRIMARY,
         )
-        copy_ans_btn.configure(command=lambda btn=copy_ans_btn, ans=ans_data: self.copy_answer_to_clipboard(ans, btn))
+        copy_ans_btn.configure(
+            command=lambda btn=copy_ans_btn, ans=ans_data: self.copy_answer_to_clipboard(ans, btn)
+        )
         copy_ans_btn.pack(side="right", padx=(8, 0))
 
         # Author & Date
@@ -495,7 +509,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             hdr,
             text=f"by {author} ({rep:,} rep) • {created_str}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=12),
-            text_color=COLOR_TEXT_SECONDARY
+            text_color=COLOR_TEXT_SECONDARY,
         )
         by_lbl.pack(side="right")
 
@@ -505,11 +519,15 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
 
         # Answer Body (Selectable Rich Text)
         body_html = ans_data.get("body", "<p>No content</p>")
-        rich_body = RichContentView(card, html_content=body_html, wraplength=660, bg_color=COLOR_BG_CARD)
+        rich_body = RichContentView(
+            card, html_content=body_html, wraplength=660, bg_color=COLOR_BG_CARD
+        )
         rich_body.pack(fill="x", expand=True, padx=18, pady=(0, 12))
 
         # Answer Comments
-        self.render_comments_accordion(card, item_id=ans_id, comment_count=comment_count, item_type="answer")
+        self.render_comments_accordion(
+            card, item_id=ans_id, comment_count=comment_count, item_type="answer"
+        )
 
     def copy_question_to_clipboard(self, question: Dict[str, Any], btn: ctk.CTkButton):
         """Copy full question title, metadata, and markdown body to clipboard."""
@@ -539,11 +557,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             self.clipboard_append(full_text)
             self.update()
 
-            btn.configure(
-                text="✓ Copied!",
-                fg_color=COLOR_SUCCESS,
-                text_color="#ffffff"
-            )
+            btn.configure(text="✓ Copied!", fg_color=COLOR_SUCCESS, text_color="#ffffff")
             self.after(1800, lambda: self._reset_copy_btn(btn, "📋 Copy Question"))
         except Exception as e:
             print(f"Error copying question: {e}")
@@ -558,26 +572,20 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             self.clipboard_append(body_md)
             self.update()
 
-            btn.configure(
-                text="✓ Copied!",
-                fg_color=COLOR_SUCCESS,
-                text_color="#ffffff"
-            )
+            btn.configure(text="✓ Copied!", fg_color=COLOR_SUCCESS, text_color="#ffffff")
             self.after(1800, lambda: self._reset_copy_btn(btn, "📋 Copy Answer"))
         except Exception as e:
             print(f"Error copying answer: {e}")
 
     def _reset_copy_btn(self, btn: ctk.CTkButton, text: str):
         try:
-            btn.configure(
-                text=text,
-                fg_color=COLOR_BG_CARD_ACTIVE,
-                text_color=COLOR_TEXT_PRIMARY
-            )
+            btn.configure(text=text, fg_color=COLOR_BG_CARD_ACTIVE, text_color=COLOR_TEXT_PRIMARY)
         except Exception:
             pass
 
-    def render_comments_accordion(self, parent_card, item_id: int, comment_count: int, item_type: str = "answer"):
+    def render_comments_accordion(
+        self, parent_card, item_id: int, comment_count: int, item_type: str = "answer"
+    ):
         """Render collapsible comments drawer with in-place expansion (no scroll reset)."""
         if comment_count <= 0:
             return
@@ -597,7 +605,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=COLOR_BG_CARD_ACTIVE,
             hover_color=COLOR_BG_CARD_HOVER,
             text_color=COLOR_TEXT_SECONDARY,
-            command=lambda: self.toggle_comments(item_id, item_type, cache_key, comment_count)
+            command=lambda: self.toggle_comments(item_id, item_type, cache_key, comment_count),
         )
         toggle_btn.pack(anchor="w", pady=(0, 4))
         self.comment_toggle_buttons[cache_key] = toggle_btn
@@ -636,12 +644,14 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                     subframe,
                     text="⏳ Loading comments...",
                     font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-                    text_color=COLOR_TEXT_MUTED
+                    text_color=COLOR_TEXT_MUTED,
                 )
                 loading_lbl.pack(anchor="w", padx=10, pady=4)
                 self.on_fetch_comments(item_id, self.current_language, item_type)
 
-    def _populate_comments_in_subframe(self, subframe: ctk.CTkFrame, comments: List[Dict[str, Any]]):
+    def _populate_comments_in_subframe(
+        self, subframe: ctk.CTkFrame, comments: List[Dict[str, Any]]
+    ):
         """Populate comments into their dedicated subframe."""
         for child in subframe.winfo_children():
             child.destroy()
@@ -651,7 +661,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
                 subframe,
                 text="No comments found.",
                 font=ctk.CTkFont(family=FONT_FAMILY, size=11),
-                text_color=COLOR_TEXT_MUTED
+                text_color=COLOR_TEXT_MUTED,
             )
             lbl.pack(anchor="w", padx=10, pady=4)
             return
@@ -659,7 +669,9 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
         for c in comments:
             self.render_comment_item(subframe, c)
 
-    def set_comments(self, item_id: int, language: str, item_type: str, comments: List[Dict[str, Any]]):
+    def set_comments(
+        self, item_id: int, language: str, item_type: str, comments: List[Dict[str, Any]]
+    ):
         """Store comments and populate them smoothly in-place."""
         cache_key = f"{language}_{item_type}_{item_id}"
         self.comments_data[cache_key] = comments
@@ -682,7 +694,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             fg_color=COLOR_BG_SIDEBAR,
             border_color=COLOR_BORDER,
             border_width=1,
-            corner_radius=6
+            corner_radius=6,
         )
         c_frame.pack(fill="x", pady=3, padx=(10, 0))
 
@@ -694,7 +706,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             text_color=COLOR_TEXT_PRIMARY,
             bg_color=COLOR_BG_SIDEBAR,
             padx=8,
-            pady=4
+            pady=4,
         )
         txt_lbl.pack(fill="x", padx=4, pady=(4, 2))
 
@@ -707,7 +719,7 @@ class QuestionDetailsView(ctk.CTkScrollableFrame):
             meta_frame,
             text=f"{score_txt}👤 {c_author} • {c_date}",
             font=ctk.CTkFont(family=FONT_FAMILY, size=10),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
         )
         meta_lbl.pack(side="left")
 
